@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for improving Codex Thread Loom.
+Thank you for improving Durable Threads.
 
 ## Before you start
 

@@ -6,14 +6,21 @@ from pathlib import Path
 
 import pytest
 
-from codex_thread_loom.cli import main
-from codex_thread_loom.config import ConfigError, load_roster
-from codex_thread_loom.ledger import Ledger
-from codex_thread_loom.packets import PacketError, build_packet
-from codex_thread_loom.routing import ModelInfo, catalog_from_payload, resolve_model
+from durable_threads.cli import main
+from durable_threads.config import ConfigError, load_roster
+from durable_threads.ledger import Ledger
+from durable_threads.packets import PacketError, build_packet
+from durable_threads.providers import (
+    ProviderError,
+    build_invocation,
+    extract_session_id,
+    run_invocation,
+)
+from durable_threads.routing import ModelInfo, catalog_from_payload, resolve_model
 
 ROOT = Path(__file__).parents[1]
 ROSTER = ROOT / "examples" / "roster.json"
+MULTI_ROSTER = ROOT / "examples" / "multi-provider-roster.json"
 
 
 def test_example_roster_loads_with_unique_workers() -> None:
@@ -27,6 +34,18 @@ def test_example_roster_loads_with_unique_workers() -> None:
         "security-review",
     ]
     assert len({worker.thread_title for worker in roster.workers}) == 4
+
+
+def test_multi_provider_roster_loads_with_provider_sessions() -> None:
+    roster = load_roster(MULTI_ROSTER)
+
+    assert roster.planner.provider == "codex"
+    assert [worker.provider for worker in roster.workers] == [
+        "claude",
+        "grok",
+        "cursor",
+        "codex",
+    ]
 
 
 def test_roster_rejects_duplicate_worker_names(tmp_path: Path) -> None:
@@ -85,7 +104,8 @@ def test_packet_is_compact_and_contains_result_contract() -> None:
     )
 
     data = packet.to_dict()
-    assert data["schema_version"] == 1
+    assert data["schema_version"] == 2
+    assert data["provider"] == "codex"
     assert data["allowed_paths"] == ["src/example.py"]
     assert "Return exact checks and results." in data["result_contract"]
 
@@ -112,6 +132,7 @@ def test_ledger_redacts_and_writes_private_file(tmp_path: Path) -> None:
         task_id="task-1",
         role="implementation",
         status="complete",
+        provider="claude",
         thread_id="thread-1",
         result="Done. token ghp_12345678901234567890 must not persist.",
         usage={"input": 10, "output": 2},
@@ -120,6 +141,7 @@ def test_ledger_redacts_and_writes_private_file(tmp_path: Path) -> None:
     data = ledger.read()
     assert "ghp_" not in json.dumps(data)
     assert data["tasks"]["task-1"]["status"] == "complete"
+    assert data["tasks"]["task-1"]["provider"] == "claude"
     assert os.stat(path).st_mode & 0o777 == 0o600
 
 
@@ -144,3 +166,98 @@ def test_cli_plan_writes_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert exit_code == 0
     assert payload["runId"] == "demo-run"
     assert len(payload["workers"]) == 4
+
+
+def test_claude_invocation_maps_roles_and_resumes() -> None:
+    invocation = build_invocation(
+        provider="claude",
+        prompt="Do the bounded work.",
+        model_selector="frontier",
+        reasoning_effort="high",
+        session_id="claude-session",
+    )
+
+    assert Path(invocation.argv[0]).name == "claude"
+    assert "--model" in invocation.argv and "opus" in invocation.argv
+    assert "--effort" in invocation.argv and "high" in invocation.argv
+    assert "--resume" in invocation.argv and "claude-session" in invocation.argv
+
+
+def test_grok_invocation_uses_default_without_guessing_a_model() -> None:
+    invocation = build_invocation(
+        provider="grok",
+        prompt="Research the bounded question.",
+        model_selector="default",
+        reasoning_effort="medium",
+        session_id="grok-session",
+    )
+
+    assert Path(invocation.argv[0]).name == "grok"
+    assert "--no-auto-update" in invocation.argv
+    assert "--output-format" in invocation.argv and "json" in invocation.argv
+    assert "-m" not in invocation.argv
+    assert "--effort" in invocation.argv and "medium" in invocation.argv
+    assert "--resume" in invocation.argv and "grok-session" in invocation.argv
+
+
+def test_cursor_invocation_accepts_compatibility_binary() -> None:
+    invocation = build_invocation(
+        provider="cursor",
+        prompt="Review the bounded diff.",
+        model_selector="composer-2.5",
+        reasoning_effort="low",
+        executable="cursor-agent",
+    )
+
+    assert invocation.argv[0] == "cursor-agent"
+    assert "--model" in invocation.argv and "composer-2.5" in invocation.argv
+    assert "--resume" not in invocation.argv
+    assert invocation.execution_mode == "cli"
+
+
+def test_provider_rejects_unsafe_generic_model_guesses() -> None:
+    with pytest.raises(ProviderError, match="does not map generic role selectors"):
+        build_invocation(
+            provider="grok",
+            prompt="Research.",
+            model_selector="frontier",
+            reasoning_effort="low",
+        )
+
+    with pytest.raises(ProviderError, match="does not map generic role selectors"):
+        build_invocation(
+            provider="cursor",
+            prompt="Review.",
+            model_selector="balanced",
+            reasoning_effort="low",
+        )
+
+
+def test_session_id_extraction_handles_json_and_streaming_json() -> None:
+    assert extract_session_id('{"session_id":"claude-123"}') == "claude-123"
+    assert extract_session_id('{"type":"event"}\n{"sessionId":"grok-456"}') == "grok-456"
+    assert extract_session_id("plain output") is None
+
+
+def test_dispatch_uses_an_argument_array_and_returns_session_id(tmp_path: Path) -> None:
+    executable = tmp_path / "fake-grok"
+    executable.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json\n"
+        "print(json.dumps({'session_id': 'fake-session', 'status': 'complete'}))\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+
+    invocation = build_invocation(
+        provider="grok",
+        prompt="Do not use a shell.",
+        model_selector="default",
+        reasoning_effort="low",
+        executable=str(executable),
+    )
+    result = run_invocation(invocation, cwd=tmp_path)
+
+    assert result.return_code == 0
+    assert result.session_id == "fake-session"
+    assert "complete" in result.stdout

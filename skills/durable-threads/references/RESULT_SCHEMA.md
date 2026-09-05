@@ -4,6 +4,7 @@ A worker result must use this shape:
 
 ```text
 Status: complete | blocked | failed
+Provider: codex | claude | grok | cursor
 Changed paths:
 - path/to/file
 Checks:

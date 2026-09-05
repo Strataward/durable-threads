@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -14,7 +12,16 @@ from typing import Any
 from .config import ConfigError, load_roster
 from .ledger import Ledger
 from .packets import build_packet
+from .providers import (
+    PROVIDERS,
+    ProviderError,
+    build_invocation,
+    provider_status,
+    run_invocation,
+)
 from .routing import catalog_from_payload, resolve_model
+
+_EFFORT_CHOICES = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 
 
 def _dump(value: Any) -> None:
@@ -40,6 +47,7 @@ def _plan(args: argparse.Namespace) -> int:
                     "name": worker.name,
                     "threadTitle": worker.thread_title,
                     "threadId": worker.thread_id,
+                    "provider": worker.provider,
                     "parallel": worker.parallel,
                 },
                 "packet": packet.to_dict(),
@@ -52,11 +60,13 @@ def _plan(args: argparse.Namespace) -> int:
             "project": roster.project_name,
             "planner": {
                 "role": roster.planner.role,
+                "provider": roster.planner.provider,
                 "modelSelector": roster.planner.model_selector,
                 "reasoningEffort": roster.planner.reasoning_effort,
             },
             "reviewer": {
                 "role": roster.reviewer.role,
+                "provider": roster.reviewer.provider,
                 "modelSelector": roster.reviewer.model_selector,
                 "reasoningEffort": roster.reviewer.reasoning_effort,
             },
@@ -104,25 +114,50 @@ def _resolve(args: argparse.Namespace) -> int:
 
 
 def _doctor(_: argparse.Namespace) -> int:
-    codex_path = shutil.which("codex")
-    result: dict[str, Any] = {"codex": {"available": codex_path is not None}}
-    if codex_path is not None:
-        try:
-            completed = subprocess.run(
-                [codex_path, "--version"],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            result["codex"]["path"] = codex_path
-            result["codex"]["version"] = (completed.stdout or completed.stderr).strip()
-            result["codex"]["exitCode"] = completed.returncode
-        except (OSError, subprocess.SubprocessError) as exc:
-            result["codex"]["error"] = str(exc)
-    result["note"] = "This helper does not start threads or call provider APIs."
-    _dump(result)
-    return 0 if result["codex"]["available"] else 1
+    statuses = provider_status()
+    _dump(
+        {
+            "providers": list(statuses),
+            "note": "Authentication is not checked. The helper does not start provider sessions.",
+        }
+    )
+    codex = next(item for item in statuses if item["provider"] == "codex")
+    return 0 if codex["available"] else 1
+
+
+def _provider_doctor(args: argparse.Namespace) -> int:
+    statuses = provider_status(args.provider)
+    _dump({"providers": list(statuses)})
+    return 0 if all(item["available"] for item in statuses) else 1
+
+
+def _provider_command(args: argparse.Namespace) -> int:
+    invocation = build_invocation(
+        provider=args.provider,
+        prompt=args.prompt,
+        model_selector=args.model,
+        reasoning_effort=args.effort,
+        session_id=args.session_id,
+        session_name=args.session_name,
+        executable=args.binary,
+    )
+    _dump(invocation.to_dict())
+    return 0
+
+
+def _dispatch(args: argparse.Namespace) -> int:
+    invocation = build_invocation(
+        provider=args.provider,
+        prompt=args.prompt,
+        model_selector=args.model,
+        reasoning_effort=args.effort,
+        session_id=args.session_id,
+        session_name=args.session_name,
+        executable=args.binary,
+    )
+    result = run_invocation(invocation, cwd=args.cwd, timeout_seconds=args.timeout)
+    _dump(result.to_dict())
+    return result.return_code
 
 
 def _record(args: argparse.Namespace) -> int:
@@ -130,6 +165,7 @@ def _record(args: argparse.Namespace) -> int:
         task_id=args.task_id,
         role=args.role,
         status=args.status,
+        provider=args.provider,
         thread_id=args.thread_id,
         result=args.result,
         usage=json.loads(args.usage) if args.usage else None,
@@ -139,7 +175,7 @@ def _record(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="codex-thread-loom")
+    parser = argparse.ArgumentParser(prog="durable-threads")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate-roster", help="validate a JSON roster")
@@ -160,14 +196,47 @@ def build_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--selector", required=True)
     resolve.set_defaults(handler=_resolve)
 
-    doctor = subparsers.add_parser("doctor", help="check the local Codex executable")
+    doctor = subparsers.add_parser("doctor", help="report all provider integrations")
     doctor.set_defaults(handler=_doctor)
+
+    provider_doctor = subparsers.add_parser(
+        "provider-doctor", help="check one provider executable without checking credentials"
+    )
+    provider_doctor.add_argument("--provider", choices=PROVIDERS, required=True)
+    provider_doctor.set_defaults(handler=_provider_doctor)
+
+    provider_command = subparsers.add_parser(
+        "provider-command", help="render one provider-specific command without running it"
+    )
+    provider_command.add_argument("--provider", choices=PROVIDERS, required=True)
+    provider_command.add_argument("--prompt", required=True)
+    provider_command.add_argument("--model", default="default")
+    provider_command.add_argument("--effort", default="low", choices=sorted(_EFFORT_CHOICES))
+    provider_command.add_argument("--session-id")
+    provider_command.add_argument("--session-name")
+    provider_command.add_argument("--binary")
+    provider_command.set_defaults(handler=_provider_command)
+
+    dispatch = subparsers.add_parser(
+        "dispatch", help="run one provider CLI session with an explicit prompt"
+    )
+    dispatch.add_argument("--provider", choices=("claude", "grok", "cursor"), required=True)
+    dispatch.add_argument("--prompt", required=True)
+    dispatch.add_argument("--model", default="default")
+    dispatch.add_argument("--effort", default="low", choices=sorted(_EFFORT_CHOICES))
+    dispatch.add_argument("--session-id")
+    dispatch.add_argument("--session-name")
+    dispatch.add_argument("--binary")
+    dispatch.add_argument("--cwd", type=Path, default=Path.cwd())
+    dispatch.add_argument("--timeout", type=int, default=3600)
+    dispatch.set_defaults(handler=_dispatch)
 
     record = subparsers.add_parser("record", help="write one redacted task record")
     record.add_argument("--ledger", type=Path, required=True)
     record.add_argument("--task-id", required=True)
     record.add_argument("--role", required=True)
     record.add_argument("--status", required=True)
+    record.add_argument("--provider", choices=PROVIDERS)
     record.add_argument("--thread-id")
     record.add_argument("--result")
     record.add_argument("--usage", help="JSON object with provider usage counters")
@@ -180,6 +249,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
-    except (ConfigError, ValueError, OSError, json.JSONDecodeError) as exc:
+    except (ConfigError, ProviderError, ValueError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

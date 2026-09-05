@@ -1,0 +1,7 @@
+interface:
+  display_name: "Durable Threads"
+  short_description: "Route work through durable provider sessions"
+  default_prompt: "Use $durable-threads to route this work through named provider sessions and verify the result."
+
+policy:
+  allow_implicit_invocation: true

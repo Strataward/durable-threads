@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codex-thread-loom"
-version = "0.1.0"
-description = "Deterministic planning and evidence contracts for durable Codex thread orchestration."
+name = "durable-threads"
+version = "0.2.0"
+description = "Deterministic planning and evidence contracts for durable multi-provider thread orchestration."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Waleed Dogar" }]
-keywords = ["codex", "agents", "orchestration", "threads", "context-management"]
+keywords = ["codex", "claude", "grok", "cursor", "agents", "orchestration", "threads", "context-management"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -31,7 +31,8 @@ dev = [
 ]
 
 [project.scripts]
-codex-thread-loom = "codex_thread_loom.cli:main"
+durable-threads = "durable_threads.cli:main"
+codex-thread-loom = "durable_threads.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

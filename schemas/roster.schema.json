@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/waleeddogar/codex-thread-loom/schemas/roster.schema.json",
+  "$id": "https://github.com/waleeddogar/durable-threads/schemas/roster.schema.json",
   "type": "object",
   "required": ["schemaVersion", "project", "defaults", "workers"],
   "properties": {
@@ -42,6 +42,9 @@
       "required": ["role", "modelSelector", "reasoningEffort"],
       "properties": {
         "role": { "type": "string", "minLength": 1 },
+        "provider": {
+          "enum": ["codex", "claude", "grok", "cursor"]
+        },
         "modelSelector": { "type": "string", "minLength": 1 },
         "reasoningEffort": {
           "enum": ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
@@ -55,6 +58,9 @@
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "role": { "type": "string", "minLength": 1 },
+        "provider": {
+          "enum": ["codex", "claude", "grok", "cursor"]
+        },
         "threadTitle": { "type": "string", "minLength": 1 },
         "purpose": { "type": "string", "minLength": 1 },
         "threadId": { "type": ["string", "null"] },

@@ -14,8 +14,8 @@ class PacketError(ValueError):
 
 
 _SECRET_MARKERS = re.compile(
-    r"(?:sk-[A-Za-z0-9]{12,}|gh[pousr]_[A-Za-z0-9_\-]{12,}|github_pat_[A-Za-z0-9_\-]{12,}|"
-    r"(?:OPENAI|ANTHROPIC|GITHUB|AWS)_[A-Z0-9_]*(?:API_?KEY|TOKEN|SECRET)\s*[=:])",
+    r"(?:sk-[A-Za-z0-9]{12,}|xai-[A-Za-z0-9_\-]{12,}|gh[pousr]_[A-Za-z0-9_\-]{12,}|github_pat_[A-Za-z0-9_\-]{12,}|"
+    r"(?:OPENAI|ANTHROPIC|GITHUB|AWS|XAI|CURSOR|GROK)_[A-Z0-9_]*(?:API_?KEY|TOKEN|SECRET)\s*[=:])",
     re.IGNORECASE,
 )
 
@@ -39,6 +39,7 @@ class DelegationPacket:
     run_id: str
     task_name: str
     role: str
+    provider: str
     objective: str
     allowed_paths: tuple[str, ...]
     acceptance: tuple[str, ...]
@@ -82,10 +83,11 @@ def build_packet(
         "Do not include secrets, private data, or a full transcript.",
     )
     return DelegationPacket(
-        schema_version=1,
+        schema_version=2,
         run_id=run_id,
         task_name=_clean_text(worker.name, "task_name", 120),
         role=_clean_text(worker.role, "role", 120),
+        provider=_clean_text(worker.provider, "provider", 40),
         objective=_clean_text(f"{objective} Purpose: {worker.purpose}", "objective", 4000),
         allowed_paths=cleaned_paths,
         acceptance=cleaned_acceptance,

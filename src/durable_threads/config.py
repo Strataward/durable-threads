@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+from .providers import PROVIDERS
+
 
 class ConfigError(ValueError):
     """Raised when a roster is invalid or unsafe to use."""
@@ -29,11 +31,20 @@ def _integer(value: Any, field: str, *, minimum: int = 0) -> int:
     return value
 
 
+def _provider(value: Any, field: str) -> str:
+    provider = cast(str, _text(value, field))
+    if provider.casefold() not in PROVIDERS:
+        allowed = ", ".join(PROVIDERS)
+        raise ConfigError(f"{field} must be one of: {allowed}")
+    return provider.casefold()
+
+
 @dataclass(frozen=True)
 class RoleConfig:
     """Model policy for one role."""
 
     role: str
+    provider: str
     model_selector: str
     reasoning_effort: str
 
@@ -42,12 +53,18 @@ class RoleConfig:
         if not isinstance(data, dict):
             raise ConfigError(f"{field} must be an object")
         role = cast(str, _text(data.get("role"), f"{field}.role"))
+        provider = _provider(data.get("provider", "codex"), f"{field}.provider")
         selector = cast(str, _text(data.get("modelSelector"), f"{field}.modelSelector"))
         effort = cast(str, _text(data.get("reasoningEffort"), f"{field}.reasoningEffort"))
         if effort not in _EFFORTS:
             allowed = ", ".join(sorted(_EFFORTS))
             raise ConfigError(f"{field}.reasoningEffort must be one of: {allowed}")
-        return cls(role=role, model_selector=selector, reasoning_effort=effort)
+        return cls(
+            role=role,
+            provider=provider,
+            model_selector=selector,
+            reasoning_effort=effort,
+        )
 
 
 @dataclass(frozen=True)
@@ -56,6 +73,7 @@ class WorkerConfig:
 
     name: str
     role: str
+    provider: str
     thread_title: str
     purpose: str
     model_selector: str
@@ -72,6 +90,7 @@ class WorkerConfig:
         values = {
             "name": _text(data.get("name"), f"{field}.name"),
             "role": _text(data.get("role"), f"{field}.role"),
+            "provider": _provider(data.get("provider", "codex"), f"{field}.provider"),
             "thread_title": _text(data.get("threadTitle"), f"{field}.threadTitle"),
             "purpose": _text(data.get("purpose"), f"{field}.purpose"),
             "model_selector": _text(data.get("modelSelector"), f"{field}.modelSelector"),
@@ -101,6 +120,7 @@ class WorkerConfig:
         return cls(
             name=cast(str, values["name"]),
             role=cast(str, values["role"]),
+            provider=cast(str, values["provider"]),
             thread_title=cast(str, values["thread_title"]),
             purpose=cast(str, values["purpose"]),
             model_selector=cast(str, values["model_selector"]),

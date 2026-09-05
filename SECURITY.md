@@ -18,10 +18,12 @@ when we confirm the issue and after we release a fix.
 
 ## Security design
 
-The project treats model output as untrusted data. The helper library does not
-execute model output, call provider APIs, or read environment files. The skill
-requires the parent agent to review task scope and evidence before it mutates a
-repository.
+The project treats model output as untrusted data. Planning, validation, and
+command rendering do not execute model output or call provider APIs. The
+explicit `dispatch` command starts a provider CLI only when the operator runs
+it. The provider then applies its own workspace and permission rules. The
+skill requires the parent agent to review task scope and evidence before it
+mutates a repository.
 
 The local ledger is best-effort state. It stores redacted summaries and task
 metadata. It does not store full prompts or transcripts.

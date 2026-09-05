@@ -8,6 +8,7 @@
 - Keep result summaries below 2,000 characters unless the user needs more.
 - Use one bounded wait for up to eight workers.
 - Do not set a hard goal token budget by default.
+- Keep the provider and provider session ID with every worker record.
 
 Change a limit only when the user requests it or when a measured evaluation
 supports the change.
@@ -32,8 +33,9 @@ when the provider reports a quota or authorization limit.
 ## External actions
 
 The skill does not infer permission to push, merge, deploy, publish, create
-accounts, or change production settings. Ask for a clear user instruction at
-the boundary. Prepare a reviewable result first.
+accounts, change production settings, or start a provider session that can
+modify files. Ask for a clear user instruction at the boundary. Prepare a
+reviewable result first.
 
 ## Privacy
 

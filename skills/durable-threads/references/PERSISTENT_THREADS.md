@@ -5,23 +5,24 @@
 Each worker entry should have:
 
 - a unique `name`;
+- a provider such as `codex`, `claude`, `grok`, or `cursor`;
 - an exact `threadTitle`;
 - a purpose;
 - a role selector;
 - a reasoning effort;
-- an optional local `threadId`;
+- an optional local provider `threadId`;
 - a maximum follow-up count.
 
-Never commit real thread IDs. A thread ID can expose project history or local
-account state.
+Never commit real thread or provider session IDs. An ID can expose project
+history or local account state.
 
 ## Resolve
 
 1. List current tasks.
-2. Find the exact title.
+2. Find the exact title and provider.
 3. Check the task status and project directory.
 4. Confirm that the worker purpose matches the packet.
-5. Reuse an idle matching task.
+5. Reuse an idle matching task or provider session.
 6. Ask before creating a new task when no match exists.
 
 Similar titles are not a match. A stale or unrelated task can carry the wrong
@@ -30,6 +31,8 @@ context.
 ## Send and wait
 
 Send one packet per worker. Include the run ID so results can be matched.
+Use the provider adapter for Claude, Grok, and Cursor. Use native Codex app
+actions for Codex.
 Wait for up to eight workers in one bounded call. Do not poll unchanged state.
 Read only the completed turn and the evidence needed for integration.
 
@@ -39,7 +42,9 @@ input is available.
 ## Resume
 
 Resume a finished worker only when its provider metadata is valid and its
-runtime supports resume. Use a focused follow-up that names the failed check.
+runtime supports resume. Claude, Grok, and Cursor use their provider session
+resume controls. Codex uses the native task action. Use a focused follow-up
+that names the failed check.
 Do not resend the full original packet.
 
 Use at most one normal correction by default. Use a second correction only if

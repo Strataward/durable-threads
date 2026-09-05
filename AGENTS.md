@@ -2,8 +2,8 @@
 
 ## Scope
 
-Codex Thread Loom is a small, provider-neutral skill and helper library. It
-coordinates durable Codex threads. It does not store prompts, source files,
+Durable Threads is a small, provider-neutral skill and helper library. It
+coordinates durable sessions across Codex, Claude, Grok, and Cursor. It does not store prompts, source files,
 credentials, or child and family data.
 
 ## Required checks
@@ -22,6 +22,7 @@ Run the skill and plugin validators when you change their package files.
 
 - Keep architecture and security decisions in the parent thread.
 - Use live model discovery. Do not invent a model identifier.
+- Keep provider-specific session controls in the provider adapter.
 - Do not add real thread IDs to examples or committed files.
 - Do not log secrets or copy full conversation transcripts into task packets.
 - Do not merge, push, deploy, or create a thread without explicit user intent.

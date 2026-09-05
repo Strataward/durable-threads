@@ -1,16 +1,19 @@
 {
-  "name": "codex-thread-loom",
-  "version": "0.1.0",
-  "description": "Coordinate durable Codex worker threads with frontier planning, efficient execution, and evidence-based review.",
+  "name": "durable-threads",
+  "version": "0.2.0",
+  "description": "Coordinate durable worker threads across Codex, Claude, Grok, and Cursor with provider-specific session controls.",
   "author": {
     "name": "Waleed Dogar",
     "url": "https://github.com/waleeddogar"
   },
-  "homepage": "https://github.com/waleeddogar/codex-thread-loom",
-  "repository": "https://github.com/waleeddogar/codex-thread-loom",
+  "homepage": "https://github.com/waleeddogar/durable-threads",
+  "repository": "https://github.com/waleeddogar/durable-threads",
   "license": "Apache-2.0",
   "keywords": [
     "codex",
+    "claude",
+    "grok",
+    "cursor",
     "threads",
     "orchestration",
     "agents",
@@ -19,16 +22,16 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Codex Thread Loom",
-    "shortDescription": "Route work through durable Codex threads",
-    "longDescription": "Use a strong planning and review thread with named, durable worker threads. Discover current model IDs, route routine work to efficient models, keep packets compact, and require evidence before integration.",
+    "displayName": "Durable Threads",
+    "shortDescription": "Route work through durable multi-provider threads",
+    "longDescription": "Use a strong planning and review task with named worker threads across Codex, Claude, Grok, and Cursor. Keep packets compact, preserve provider sessions, and require evidence before integration.",
     "developerName": "Waleed Dogar",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [
-      "Use $codex-thread-loom to plan and route this work.",
-      "Use $codex-thread-loom with named worker threads.",
-      "Use $codex-thread-loom to review this change with evidence."
+      "Use $durable-threads to plan and route this work.",
+      "Use $durable-threads with named provider sessions.",
+      "Use $durable-threads to review this change with evidence."
     ],
     "brandColor": "#4F46E5"
   }

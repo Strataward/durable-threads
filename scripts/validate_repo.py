@@ -19,10 +19,10 @@ def main() -> int:
         bool(re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", manifest["name"])), "invalid plugin name"
     )
     require(manifest["license"] == "Apache-2.0", "plugin must use Apache-2.0")
-    skill = root / "skills" / "codex-thread-loom" / "SKILL.md"
+    skill = root / "skills" / "durable-threads" / "SKILL.md"
     content = skill.read_text(encoding="utf-8")
     require(content.startswith("---\n"), "skill has no YAML frontmatter")
-    require("name: codex-thread-loom" in content, "skill name is missing")
+    require("name: durable-threads" in content, "skill name is missing")
     require("description:" in content, "skill description is missing")
     require("[TODO" not in content, "skill has an unfinished placeholder")
     for path in (root / "examples").glob("*.json"):

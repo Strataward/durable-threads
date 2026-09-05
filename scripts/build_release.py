@@ -7,7 +7,15 @@ import json
 import zipfile
 from pathlib import Path
 
-EXCLUDED_PARTS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache", "dist"}
+EXCLUDED_PARTS = {
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    "dist",
+    "uv.lock",
+}
 
 
 def build(root: Path, output: Path) -> Path:
@@ -18,7 +26,9 @@ def build(root: Path, output: Path) -> Path:
     archive = output / f"{name}-{version}.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as handle:
         for path in sorted(root.rglob("*")):
-            if not path.is_file() or any(part in EXCLUDED_PARTS for part in path.parts):
+            if not path.is_file() or any(
+                part in EXCLUDED_PARTS or part.endswith(".egg-info") for part in path.parts
+            ):
                 continue
             if path == archive:
                 continue

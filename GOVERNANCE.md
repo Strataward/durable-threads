@@ -1,6 +1,6 @@
 # Governance
 
-Codex Thread Loom is maintained by the repository owner during the alpha
+Durable Threads is maintained by the repository owner during the alpha
 period.
 
 The maintainer may accept, request changes to, or reject a contribution. The

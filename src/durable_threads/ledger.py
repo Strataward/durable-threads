@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Any
 
 _SECRET = re.compile(
-    r"(?:sk-[A-Za-z0-9]{12,}|gh[pousr]_[A-Za-z0-9_\-]{12,}|github_pat_[A-Za-z0-9_\-]{12,})",
+    r"(?:sk-[A-Za-z0-9]{12,}|xai-[A-Za-z0-9_\-]{12,}|gh[pousr]_[A-Za-z0-9_\-]{12,}|"
+    r"github_pat_[A-Za-z0-9_\-]{12,}|(?:OPENAI|ANTHROPIC|XAI|CURSOR|GROK)_"
+    r"[A-Z0-9_]*(?:API_?KEY|TOKEN|SECRET)\s*[=:]\s*[^\s,;]+)",
     re.IGNORECASE,
 )
 
@@ -75,6 +77,7 @@ class Ledger:
         task_id: str,
         role: str,
         status: str,
+        provider: str | None = None,
         thread_id: str | None = None,
         result: str | None = None,
         usage: dict[str, Any] | None = None,
@@ -93,6 +96,8 @@ class Ledger:
             "status": status,
             "updatedAt": _now(),
         }
+        if provider:
+            task["provider"] = provider
         if thread_id:
             task["threadId"] = thread_id
         if result is not None:

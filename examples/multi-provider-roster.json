@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "multi-provider-example"
+  },
+  "defaults": {
+    "planner": {
+      "provider": "codex",
+      "role": "planner",
+      "modelSelector": "frontier",
+      "reasoningEffort": "high"
+    },
+    "reviewer": {
+      "provider": "codex",
+      "role": "reviewer",
+      "modelSelector": "frontier",
+      "reasoningEffort": "medium"
+    }
+  },
+  "policy": {
+    "maxParallelWorkers": 2,
+    "resultMaxChars": 2000,
+    "allowThreadCreation": false
+  },
+  "workers": [
+    {
+      "name": "claude-implementation",
+      "role": "implementation",
+      "provider": "claude",
+      "threadTitle": "Worker: Claude implementation",
+      "purpose": "Make bounded code changes in the allowed paths.",
+      "modelSelector": "sonnet",
+      "reasoningEffort": "low",
+      "maxFollowups": 1,
+      "parallel": false
+    },
+    {
+      "name": "grok-research",
+      "role": "research-docs",
+      "provider": "grok",
+      "threadTitle": "Worker: Grok research",
+      "purpose": "Collect repository facts and update bounded documentation.",
+      "modelSelector": "default",
+      "reasoningEffort": "medium",
+      "maxFollowups": 1,
+      "parallel": true
+    },
+    {
+      "name": "cursor-review",
+      "role": "security-review",
+      "provider": "cursor",
+      "threadTitle": "Worker: Cursor review",
+      "purpose": "Review the diff for security and privacy regressions.",
+      "modelSelector": "default",
+      "reasoningEffort": "medium",
+      "maxFollowups": 1,
+      "parallel": true
+    },
+    {
+      "name": "codex-integration",
+      "role": "integration",
+      "provider": "codex",
+      "threadTitle": "Worker: Codex integration",
+      "purpose": "Review evidence and integrate bounded worker results.",
+      "modelSelector": "frontier",
+      "reasoningEffort": "medium",
+      "maxFollowups": 1,
+      "parallel": false
+    }
+  ]
+}
