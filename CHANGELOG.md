@@ -13,6 +13,7 @@ The project uses semantic versioning after the 1.0 release.
 - Durable-thread operating policy for planning, execution, review, and recovery.
 - Model discovery and role-based routing contracts.
 - Redacted local ledger support for task state and usage evidence.
+- Mermaid architecture diagram in the README.
 
 ### Changed
 

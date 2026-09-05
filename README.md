@@ -37,6 +37,59 @@ The design uses these controls:
 This repository is an independent Apache-2.0 implementation. It is not a fork
 of `backnotprop/orchestrator`.
 
+## How it works
+
+The planner keeps control of scope and acceptance. Named workers perform small
+tasks with compact packets. The planner reviews evidence before it integrates
+any result.
+
+```mermaid
+flowchart LR
+    request["User request"]
+    plan["Planner and reviewer<br/>Codex with Astra when available<br/>scope, plan, acceptance"]
+    roster["Durable roster<br/>role + provider + session ID"]
+    packet["Compact packet<br/>objective + paths + checks<br/>no full transcript"]
+    adapter["Provider adapter<br/>command and resume rules"]
+
+    subgraph workers["Named durable worker sessions"]
+        codex["Codex native task"]
+        claude["Claude Code<br/>--resume"]
+        grok["Grok Build<br/>--resume or --continue"]
+        cursor["Cursor Agent<br/>--resume"]
+    end
+
+    evidence["Structured evidence<br/>changed paths + exact checks + concerns"]
+    ledger["Redacted local ledger<br/>status + IDs + usage"]
+    review{"Review diff and evidence"}
+    correction["One focused correction"]
+    integrate["Integrate and verify<br/>commit or deploy only when authorized"]
+    stop["Stop and report<br/>quota, auth, active writer, or ambiguity"]
+
+    request --> plan
+    plan --> roster
+    plan --> packet
+    roster --> adapter
+    packet --> adapter
+    adapter --> codex
+    adapter --> claude
+    adapter --> grok
+    adapter --> cursor
+    codex --> evidence
+    claude --> evidence
+    grok --> evidence
+    cursor --> evidence
+    evidence --> review
+    evidence --> ledger
+    review -->|passes| integrate
+    review -->|defect found| correction
+    correction --> packet
+    adapter -->|provider failure| stop
+    review -->|unsafe or unclear| stop
+```
+
+Read the full control flow, failure rules, and component contracts in
+[`ARCHITECTURE.md`](skills/durable-threads/references/ARCHITECTURE.md).
+
 ## Install the skill
 
 Install the public skill with:
