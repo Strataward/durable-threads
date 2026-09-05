@@ -63,3 +63,10 @@ loop.
 Astra can perform powerful multi-step work. Keep the same path, approval, and
 external-action boundaries that apply to every model. The planner must inspect
 the final diff. The skill never treats a model claim as independent acceptance.
+
+## Official references
+
+- [GPT-6 Astra announcement](https://openai.com/index/gpt-6-astra/)
+- [GPT-6 Astra model guide](https://developers.openai.com/api/docs/models/gpt-6-astra)
+- [OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model)
+- [Codex durable-goal use case](https://developers.openai.com/codex/use-cases)
