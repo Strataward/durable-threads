@@ -14,6 +14,10 @@ The project uses semantic versioning after the 1.0 release.
 - Model discovery and role-based routing contracts.
 - Redacted local ledger support for task state and usage evidence.
 
+### Changed
+
+- Moved the public repository to the Strataward organization.
+
 ## [0.2.0] - 2026-09-05
 
 ### Added

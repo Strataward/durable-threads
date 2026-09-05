@@ -1,6 +1,6 @@
 # Durable Threads
 
-[![CI](https://github.com/waleeddogar/durable-threads/actions/workflows/ci.yml/badge.svg)](https://github.com/waleeddogar/durable-threads/actions/workflows/ci.yml)
+[![CI](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml/badge.svg)](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Durable Threads is a provider-neutral skill and helper library for durable
@@ -42,7 +42,7 @@ of `backnotprop/orchestrator`.
 Install the public skill with:
 
 ```text
-npx skills add waleeddogar/durable-threads --skill durable-threads
+npx skills add Strataward/durable-threads --skill durable-threads
 ```
 
 Add `-g` for a user-level installation. The repository also works as a project
@@ -66,7 +66,7 @@ The repository includes a validated `.codex-plugin/plugin.json` manifest. Codex
 builds that support remote plugin marketplaces can add the repository with:
 
 ```text
-codex plugin marketplace add waleeddogar/durable-threads
+codex plugin marketplace add Strataward/durable-threads
 codex plugin list
 ```
 
