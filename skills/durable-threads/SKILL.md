@@ -8,6 +8,16 @@ description: Coordinate complex software work through named durable sessions acr
 Use this skill when the user wants a planner to route work through named,
 persistent worker sessions.
 
+Durability covers identity and recorded evidence. Provider recovery remains a
+planner responsibility. Keep simple work in the current task. Use `plan --local`
+for zero workers. Inspect automatic routing before dispatch. Use `--worker` to
+select exact workers when keyword routing does not match the task.
+
+Use `verify-result` to compare claimed paths with the actual diff. This checks
+the evidence contract; it does not execute the claimed test commands. Run the
+acceptance checks yourself before integration. Record unknown token usage as
+unknown. Do not treat a successful provider exit as verified completion.
+
 ## Operating model
 
 Keep the current task as the planner and integration owner. Use the current

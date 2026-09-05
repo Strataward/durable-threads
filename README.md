@@ -8,6 +8,11 @@ software work. It gives one planner task a named set of worker sessions. It
 keeps packets small. It keeps provider session IDs stable. It requires
 evidence before integration.
 
+In this project, durable means stable worker identity and redacted evidence
+state. It does not mean that a provider process will restart itself after a
+quota error or an active-writer conflict. The planner remains the owner of
+scope, recovery, and integration.
+
 Supported providers:
 
 - OpenAI Codex through native Codex app actions.
@@ -39,14 +44,20 @@ of `backnotprop/orchestrator`.
 
 ## How it works
 
-The planner keeps control of scope and acceptance. Named workers perform small
-tasks with compact packets. The planner reviews evidence before it integrates
-any result.
+See [validation and limits](skills/durable-threads/references/VALIDATION.md) for
+the exact enforcement boundaries and the live comparison protocol. The path
+verifier does not run the test commands claimed by a worker. The planner must
+run acceptance checks before integration.
+
+The planner keeps control of scope and acceptance. A routing gate selects only
+the workers that the task needs. Named workers perform small tasks with compact
+packets. The planner verifies evidence and the actual diff before integration.
 
 ```mermaid
 flowchart LR
     request["User request"]
     plan["Planner and reviewer<br/>Codex with Astra when available<br/>scope, plan, acceptance"]
+    route{"Route only needed workers<br/>0-2 by default"}
     roster["Durable roster<br/>role + provider + session ID"]
     packet["Compact packet<br/>objective + paths + checks<br/>no full transcript"]
     adapter["Provider adapter<br/>command and resume rules"]
@@ -60,14 +71,15 @@ flowchart LR
 
     evidence["Structured evidence<br/>changed paths + exact checks + concerns"]
     ledger["Redacted local ledger<br/>status + IDs + usage"]
-    review{"Review diff and evidence"}
+    verify{"Verify evidence and actual diff"}
     correction["One focused correction"]
     integrate["Integrate and verify<br/>commit or deploy only when authorized"]
     stop["Stop and report<br/>quota, auth, active writer, or ambiguity"]
 
     request --> plan
-    plan --> roster
-    plan --> packet
+    plan --> route
+    route --> roster
+    route --> packet
     roster --> adapter
     packet --> adapter
     adapter --> codex
@@ -78,13 +90,13 @@ flowchart LR
     claude --> evidence
     grok --> evidence
     cursor --> evidence
-    evidence --> review
+    evidence --> verify
     evidence --> ledger
-    review -->|passes| integrate
-    review -->|defect found| correction
+    verify -->|passes| integrate
+    verify -->|defect found| correction
     correction --> packet
     adapter -->|provider failure| stop
-    review -->|unsafe or unclear| stop
+    verify -->|unsafe or unclear| stop
 ```
 
 Read the full control flow, failure rules, and component contracts in
@@ -173,7 +185,20 @@ durable-threads plan \
   --run-id storibuk-reading-level
 ```
 
-The plan command does not start a provider. It creates a reviewable packet.
+The plan command routes only the workers that match the task. It does not start
+a provider. It creates a reviewable packet.
+
+Use `--worker` to override automatic routing with one or two exact worker names:
+
+```bash
+durable-threads plan \
+  --roster examples/roster.json \
+  --worker implementation \
+  --worker security-review \
+  --objective "Harden the session boundary." \
+  --allowed-path src/durable_threads/providers.py \
+  --acceptance "The focused security checks pass."
+```
 
 ## Provider commands
 
@@ -195,12 +220,31 @@ durable-threads dispatch \
   --model default \
   --effort medium \
   --cwd /path/to/repository \
+  --ledger /path/to/repository/.codex-thread-ledger/ledger.json \
+  --task-id example-run \
+  --role research-docs \
   --prompt "Complete the bounded task and report exact checks."
 ```
 
 Dispatch uses an argument array. It does not use a shell. It captures bounded
-output. It returns a provider session ID when the provider emits one. It does
-not write a transcript to the ledger.
+output and common token counters. With a ledger, it blocks a second local writer
+and records the provider session ID and usage. It does not write a transcript to
+the ledger. Codex remains a native Codex app action and is not launched by this
+CLI.
+
+Verify a worker result and the actual diff before integration:
+
+```bash
+durable-threads verify-result \
+  --result worker-result.json \
+  --repo /path/to/repository \
+  --base-ref HEAD \
+  --allowed-path src/durable_threads/providers.py
+```
+
+The verification command requires a declared status, provider, changed paths,
+exact checks, and remaining concerns. It rejects paths outside the allow-list
+and rejects claims that do not match the diff.
 
 Check local executable availability:
 
@@ -213,6 +257,10 @@ durable-threads provider-doctor --provider cursor
 
 The doctor commands do not check credentials. Use each provider's own login
 flow or environment variable.
+
+The local ledger only protects against duplicate writers that use the same
+ledger. It cannot inspect a provider's private runtime. Stop when a provider
+reports an active writer, quota error, or unclear session state.
 
 ## Provider model policy
 
@@ -247,6 +295,10 @@ only when an evaluation shows a real quality gain.
 The objective is total task value. A strong planner can reduce token use when
 it prevents bad fan-out, repeated context, and correction loops.
 
+Do not use every provider for every task. Start with one efficient worker. Add a
+second worker only for independent work. Add a frontier reviewer only when the
+risk or change size justifies the extra context.
+
 Read [`skills/durable-threads/references/ASTRA.md`](skills/durable-threads/references/ASTRA.md)
 for the full policy.
 
@@ -261,6 +313,10 @@ quota and writer state as explicit failure states.
 This was a practical smoke test, not a benchmark. See
 [`skills/durable-threads/references/COMPARISON.md`](skills/durable-threads/references/COMPARISON.md)
 for the decision record.
+
+This evidence is a smoke test, not a benchmark. The repository does not claim
+that it uses fewer tokens until a controlled comparison measures correctness,
+follow-ups, rework, provider recovery, and total input and output tokens.
 
 ## Development
 

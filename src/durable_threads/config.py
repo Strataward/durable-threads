@@ -141,6 +141,7 @@ class Roster:
     reviewer: RoleConfig
     workers: tuple[WorkerConfig, ...]
     max_parallel_workers: int
+    max_selected_workers: int
     result_max_chars: int
     allow_thread_creation: bool
 
@@ -187,6 +188,13 @@ def load_roster(path: str | Path) -> Roster:
         "policy.maxParallelWorkers",
         minimum=1,
     )
+    max_selected = _integer(
+        policy.get("maxSelectedWorkers", min(2, len(workers))),
+        "policy.maxSelectedWorkers",
+        minimum=1,
+    )
+    if max_selected > len(workers):
+        raise ConfigError("policy.maxSelectedWorkers cannot exceed the worker count")
     result_max_chars = _integer(
         policy.get("resultMaxChars", 2000), "policy.resultMaxChars", minimum=200
     )
@@ -200,6 +208,7 @@ def load_roster(path: str | Path) -> Roster:
         reviewer=reviewer,
         workers=workers,
         max_parallel_workers=max_parallel,
+        max_selected_workers=max_selected,
         result_max_chars=result_max_chars,
         allow_thread_creation=allow_creation,
     )

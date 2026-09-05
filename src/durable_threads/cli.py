@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from .config import ConfigError, load_roster
-from .ledger import Ledger
+from .evidence import EvidenceError, git_changed_paths, parse_worker_result, validate_evidence
+from .ledger import Ledger, LedgerBusyError, LedgerStateError
 from .packets import build_packet
 from .providers import (
     PROVIDERS,
@@ -19,7 +20,7 @@ from .providers import (
     provider_status,
     run_invocation,
 )
-from .routing import catalog_from_payload, resolve_model
+from .routing import catalog_from_payload, resolve_model, select_workers
 
 _EFFORT_CHOICES = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 
@@ -31,8 +32,16 @@ def _dump(value: Any) -> None:
 def _plan(args: argparse.Namespace) -> int:
     roster = load_roster(args.roster)
     run_id = args.run_id or f"loom-{uuid.uuid4().hex[:12]}"
+    decision = select_workers(
+        roster,
+        objective=args.objective,
+        allowed_paths=args.allowed_path,
+        acceptance=args.acceptance,
+        requested_workers=args.worker,
+        local_only=args.local,
+    )
     packets = []
-    for worker in roster.workers:
+    for worker in decision.selected:
         packet = build_packet(
             worker,
             run_id=run_id,
@@ -72,8 +81,15 @@ def _plan(args: argparse.Namespace) -> int:
             },
             "policy": {
                 "maxParallelWorkers": roster.max_parallel_workers,
+                "maxSelectedWorkers": roster.max_selected_workers,
                 "resultMaxChars": roster.result_max_chars,
                 "allowThreadCreation": roster.allow_thread_creation,
+            },
+            "route": {
+                "mode": "explicit" if decision.explicit else "automatic",
+                "selectedWorkers": [worker.name for worker in decision.selected],
+                "skippedWorkers": [worker.name for worker in decision.skipped],
+                "reasons": list(decision.reasons),
             },
             "workers": packets,
         }
@@ -146,18 +162,132 @@ def _provider_command(args: argparse.Namespace) -> int:
 
 
 def _dispatch(args: argparse.Namespace) -> int:
+    if bool(args.ledger) != bool(args.task_id):
+        raise ProviderError("--ledger and --task-id must be used together")
+    if args.verify_evidence and not args.allowed_path:
+        raise EvidenceError("--verify-evidence requires at least one --allowed-path")
+    provider = args.provider
+    session_id = args.session_id
+    role = args.role
+    max_followups = args.max_followups if args.max_followups is not None else 1
+    max_output_chars = args.max_output_chars if args.max_output_chars is not None else 2000
+    if args.roster or args.worker_name:
+        if not args.roster or not args.worker_name:
+            raise ProviderError("--roster and --worker-name must be used together")
+        roster = load_roster(args.roster)
+        worker = next(
+            (item for item in roster.workers if item.name == args.worker_name),
+            None,
+        )
+        if worker is None:
+            raise ProviderError(f"worker not found in roster: {args.worker_name}")
+        if worker.provider != provider:
+            raise ProviderError(
+                f"worker {worker.name!r} belongs to provider {worker.provider!r}, not {provider!r}"
+            )
+        role = worker.role
+        session_id = session_id or worker.thread_id
+        max_followups = (
+            worker.max_followups
+            if args.max_followups is None
+            else min(args.max_followups, worker.max_followups)
+        )
+        max_output_chars = min(max_output_chars, roster.result_max_chars)
     invocation = build_invocation(
-        provider=args.provider,
+        provider=provider,
         prompt=args.prompt,
         model_selector=args.model,
         reasoning_effort=args.effort,
-        session_id=args.session_id,
+        session_id=session_id,
         session_name=args.session_name,
         executable=args.binary,
     )
-    result = run_invocation(invocation, cwd=args.cwd, timeout_seconds=args.timeout)
-    _dump(result.to_dict())
-    return result.return_code
+    ledger = Ledger(args.ledger) if args.ledger else None
+    claimed = False
+    try:
+        if ledger:
+            ledger.begin_task(
+                task_id=args.task_id,
+                role=role,
+                provider=provider,
+                thread_id=session_id,
+                followup_index=args.followup_index,
+                max_followups=max_followups,
+            )
+            claimed = True
+        result = run_invocation(
+            invocation,
+            cwd=args.cwd,
+            timeout_seconds=args.timeout,
+            max_output_chars=max_output_chars,
+        )
+        if session_id and result.session_id and session_id != result.session_id:
+            raise ProviderError("provider returned a different session ID; inspect before retry")
+        verified = None
+        if args.verify_evidence:
+            if not args.allowed_path:
+                raise EvidenceError("--verify-evidence requires at least one --allowed-path")
+            evidence = parse_worker_result(result.stdout)
+            actual_paths = git_changed_paths(args.cwd, args.base_ref)
+            verified = validate_evidence(
+                evidence,
+                allowed_paths=args.allowed_path,
+                actual_paths=actual_paths,
+            )
+        accepted = result.return_code == 0 and (verified is None or verified.status == "complete")
+        if ledger:
+            ledger.record_task(
+                task_id=args.task_id,
+                role=role,
+                status=(
+                    "complete" if accepted and verified else "unverified" if accepted else "blocked"
+                ),
+                provider=provider,
+                thread_id=result.session_id or session_id,
+                result=(
+                    "Provider completed. Evidence was verified."
+                    if verified is not None and accepted
+                    else "Provider completed. Evidence was not verified."
+                    if result.return_code == 0
+                    else f"Provider returned exit code {result.return_code}."
+                ),
+                usage=result.usage,
+            )
+        payload = result.to_dict()
+        if verified is not None:
+            payload["evidence"] = verified.to_dict()
+        _dump(payload)
+        return result.return_code if result.return_code != 0 else (0 if accepted else 2)
+    except (EvidenceError, LedgerBusyError, LedgerStateError, OSError, ProviderError) as exc:
+        if ledger and claimed:
+            ledger.record_task(
+                task_id=args.task_id,
+                role=role,
+                status="unknown",
+                provider=provider,
+                thread_id=session_id,
+                result=f"Dispatch stopped: {type(exc).__name__}.",
+            )
+        raise
+
+
+def _verify_result(args: argparse.Namespace) -> int:
+    text = sys.stdin.read() if str(args.result) == "-" else args.result.read_text(encoding="utf-8")
+    evidence = parse_worker_result(text)
+    actual_paths = git_changed_paths(args.repo, args.base_ref)
+    verified = validate_evidence(
+        evidence,
+        allowed_paths=args.allowed_path,
+        actual_paths=actual_paths,
+    )
+    _dump(
+        {
+            "valid": True,
+            "evidence": verified.to_dict(),
+            "actualPaths": list(actual_paths),
+        }
+    )
+    return 0 if verified.status == "complete" else 2
 
 
 def _record(args: argparse.Namespace) -> int:
@@ -188,7 +318,14 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--allowed-path", action="append", required=True)
     plan.add_argument("--acceptance", action="append", required=True)
     plan.add_argument("--constraint", action="append", default=[])
+    plan.add_argument(
+        "--worker",
+        action="append",
+        default=[],
+        help="select a named worker explicitly; repeat up to maxSelectedWorkers",
+    )
     plan.add_argument("--run-id")
+    plan.add_argument("--local", action="store_true", help="keep work in the current task")
     plan.set_defaults(handler=_plan)
 
     resolve = subparsers.add_parser("resolve-model", help="resolve a role against a model catalog")
@@ -229,7 +366,27 @@ def build_parser() -> argparse.ArgumentParser:
     dispatch.add_argument("--binary")
     dispatch.add_argument("--cwd", type=Path, default=Path.cwd())
     dispatch.add_argument("--timeout", type=int, default=3600)
+    dispatch.add_argument("--max-output-chars", type=int)
+    dispatch.add_argument("--ledger", type=Path)
+    dispatch.add_argument("--task-id")
+    dispatch.add_argument("--role", default="worker")
+    dispatch.add_argument("--followup-index", type=int, default=0)
+    dispatch.add_argument("--max-followups", type=int)
+    dispatch.add_argument("--roster", type=Path)
+    dispatch.add_argument("--worker-name")
+    dispatch.add_argument("--verify-evidence", action="store_true")
+    dispatch.add_argument("--allowed-path", action="append", default=[])
+    dispatch.add_argument("--base-ref")
     dispatch.set_defaults(handler=_dispatch)
+
+    verify = subparsers.add_parser(
+        "verify-result", help="verify worker evidence against the allowed paths and git diff"
+    )
+    verify.add_argument("--result", type=Path, required=True, help="result file, or - for stdin")
+    verify.add_argument("--repo", type=Path, default=Path.cwd())
+    verify.add_argument("--base-ref")
+    verify.add_argument("--allowed-path", action="append", required=True)
+    verify.set_defaults(handler=_verify_result)
 
     record = subparsers.add_parser("record", help="write one redacted task record")
     record.add_argument("--ledger", type=Path, required=True)
@@ -249,6 +406,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
-    except (ConfigError, ProviderError, ValueError, OSError, json.JSONDecodeError) as exc:
+    except (
+        ConfigError,
+        EvidenceError,
+        LedgerBusyError,
+        LedgerStateError,
+        ProviderError,
+        ValueError,
+        OSError,
+        json.JSONDecodeError,
+    ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

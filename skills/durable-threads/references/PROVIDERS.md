@@ -148,7 +148,14 @@ durable-threads dispatch \
 
 The dispatch command uses an argument array. It does not use a shell. It
 captures bounded output. It returns a session ID when the provider emits one.
-It does not write a transcript to the local ledger.
+It extracts common token counters when the provider emits them. With
+`--ledger` and `--task-id`, it records start and finish state without writing a
+transcript. It blocks a second local writer and rejects a provider or session
+ID change during a follow-up.
+
+Codex is the deliberate exception. The helper returns a native-app action
+description for Codex. Use the Codex task actions for list, send, wait, read,
+and provider-side writer checks. The Python CLI does not launch a Codex task.
 
 ## Session ID handling
 

@@ -9,6 +9,17 @@ The project uses semantic versioning after the 1.0 release.
 
 ### Added
 
+- Selective routing with explicit worker selection and a local-only route.
+- Evidence parsing and comparison with changed repository paths.
+- Optional dispatch records with usage counters and session identity checks.
+- Exclusive ledger transaction locks and bounded follow-up indices.
+- Failure tests for blocked states, session drift, and repeated calls.
+
+### Limits
+
+- Token savings remain unmeasured. Provider recovery remains manual.
+- Evidence validation does not execute reported checks or sandbox file writes.
+
 - Initial public release of the Codex Thread Loom skill and helper library.
 - Durable-thread operating policy for planning, execution, review, and recovery.
 - Model discovery and role-based routing contracts.

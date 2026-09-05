@@ -18,6 +18,10 @@ Use Astra where its additional reasoning can reduce total work:
 - review a diff and test evidence;
 - decide whether a correction is required.
 
+Do not use Astra to review every small edit. Route the task first. Use one
+efficient worker when it can satisfy the acceptance checks. Add Astra review
+when the change has security, release, privacy, or broad integration risk.
+
 Keep routine edits, focused tests, and simple documentation on an efficient
 model. A strong planner should reduce repeated context and rework. It should
 not turn every small task into a frontier-model call.
@@ -57,6 +61,11 @@ before its evidence is complete.
 Measure total task value, not only output tokens. A more capable planner can
 save usage when it prevents a bad fan-out, repeated context, or correction
 loop.
+
+Keep a baseline for comparison. Record input tokens, output tokens, number of
+workers, follow-ups, rework, failed checks, and final correctness. Do not claim
+that persistent sessions save tokens until the same task beats a single-agent
+run on the chosen measures.
 
 ## Safety policy
 

@@ -1,5 +1,12 @@
 # Persistent thread lifecycle
 
+## What durable means
+
+Durable Threads preserves the worker title, provider, provider session ID, task
+status, and compact evidence. It does not own the provider's private runtime.
+It does not restart a provider after a quota error. It does not clear an active
+writer that the provider reports.
+
 ## Roster fields
 
 Each worker entry should have:
@@ -50,6 +57,11 @@ Do not resend the full original packet.
 Use at most one normal correction by default. Use a second correction only if
 the new evidence is concrete and the user has not asked for a strict limit.
 
+The local ledger enforces the follow-up index. It rejects a provider change or
+session ID change during a follow-up. When the follow-up limit is reached,
+rotate to a new task or a newly authorized session. This limits stale context
+and gives the planner a clear compaction boundary.
+
 ## Recovery states
 
 | State | Action |
@@ -60,6 +72,10 @@ the new evidence is concrete and the user has not asked for a strict limit.
 | missing provider metadata | Do not resume. Start a new authorized task if needed. |
 | provider failure | Preserve evidence. Classify the failure before retry. |
 | unknown status | Inspect once. Do not issue repeated writes. |
+
+The local writer guard covers tasks that use the same ledger. It is not a
+provider status API. Treat a provider-side active-writer response as unknown
+state and stop.
 
 The active-writer rule matters because a failed follow-up can leave provider
 state alive even when the local task record looks stale.

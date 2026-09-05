@@ -15,3 +15,5 @@ build/
 .codex-thread-loom/
 .codex/loom/
 examples/local-roster.json
+.codex-thread-ledger/
+uv.lock

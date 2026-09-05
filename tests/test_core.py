@@ -8,15 +8,22 @@ import pytest
 
 from durable_threads.cli import main
 from durable_threads.config import ConfigError, load_roster
-from durable_threads.ledger import Ledger
+from durable_threads.evidence import EvidenceError, parse_worker_result, validate_evidence
+from durable_threads.ledger import Ledger, LedgerBusyError, LedgerStateError
 from durable_threads.packets import PacketError, build_packet
 from durable_threads.providers import (
     ProviderError,
     build_invocation,
     extract_session_id,
+    extract_usage,
     run_invocation,
 )
-from durable_threads.routing import ModelInfo, catalog_from_payload, resolve_model
+from durable_threads.routing import (
+    ModelInfo,
+    catalog_from_payload,
+    resolve_model,
+    select_workers,
+)
 
 ROOT = Path(__file__).parents[1]
 ROSTER = ROOT / "examples" / "roster.json"
@@ -56,6 +63,56 @@ def test_roster_rejects_duplicate_worker_names(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="worker names must be unique"):
         load_roster(path)
+
+
+def test_roster_rejects_selected_worker_limit_above_worker_count(tmp_path: Path) -> None:
+    data = json.loads(ROSTER.read_text(encoding="utf-8"))
+    data["policy"]["maxSelectedWorkers"] = 99
+    path = tmp_path / "roster.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="cannot exceed the worker count"):
+        load_roster(path)
+
+
+def test_auto_routing_selects_one_worker_for_a_bounded_change() -> None:
+    roster = load_roster(ROSTER)
+
+    decision = select_workers(
+        roster,
+        objective="Fix one bounded behaviour.",
+        allowed_paths=["src/example.py"],
+        acceptance=["The focused test passes."],
+    )
+
+    assert [worker.name for worker in decision.selected] == ["implementation"]
+    assert not decision.explicit
+    assert "test-debug" in [worker.name for worker in decision.skipped]
+
+
+def test_auto_routing_caps_independent_specialists() -> None:
+    roster = load_roster(ROSTER)
+
+    decision = select_workers(
+        roster,
+        objective="Fix a security regression and add regression tests.",
+        allowed_paths=["src/example.py"],
+        acceptance=["The security review and tests pass."],
+    )
+
+    assert [worker.name for worker in decision.selected] == ["implementation", "security-review"]
+    assert any("maxSelectedWorkers" in reason for reason in decision.reasons)
+
+
+def test_explicit_routing_rejects_more_workers_than_policy() -> None:
+    roster = load_roster(ROSTER)
+
+    with pytest.raises(ValueError, match="maxSelectedWorkers"):
+        select_workers(
+            roster,
+            objective="Review the repository.",
+            requested_workers=["implementation", "test-debug", "research-docs"],
+        )
 
 
 def test_role_resolution_uses_live_metadata_without_guessing() -> None:
@@ -165,7 +222,8 @@ def test_cli_plan_writes_json(capsys: pytest.CaptureFixture[str]) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert exit_code == 0
     assert payload["runId"] == "demo-run"
-    assert len(payload["workers"]) == 4
+    assert len(payload["workers"]) == 1
+    assert payload["route"]["selectedWorkers"] == ["implementation"]
 
 
 def test_claude_invocation_maps_roles_and_resumes() -> None:
@@ -239,6 +297,101 @@ def test_session_id_extraction_handles_json_and_streaming_json() -> None:
     assert extract_session_id("plain output") is None
 
 
+def test_usage_extraction_handles_provider_metadata() -> None:
+    output = '{"usage":{"input_tokens":12,"output_tokens":7,"total_tokens":19}}'
+
+    assert extract_usage(output) == {
+        "inputTokens": 12,
+        "outputTokens": 7,
+        "totalTokens": 19,
+    }
+
+
+def test_worker_evidence_requires_checks_and_matches_the_diff() -> None:
+    result = parse_worker_result(
+        "Status: complete\n"
+        "Provider: claude\n"
+        "Changed paths:\n"
+        "- src/example.py\n"
+        "Checks:\n"
+        "- `pytest tests/test_core.py`: passed\n"
+        "Remaining concerns:\n"
+        "- None known\n"
+    )
+
+    verified = validate_evidence(
+        result,
+        allowed_paths=["src/**"],
+        actual_paths=["src/example.py"],
+    )
+
+    assert verified.changed_paths == ("src/example.py",)
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["../secret.txt", str(Path.cwd() / "secret.txt"), "docs/../secret.txt"],
+)
+def test_worker_evidence_rejects_unsafe_paths(path: str) -> None:
+    result = parse_worker_result(
+        json.dumps(
+            {
+                "status": "complete",
+                "provider": "claude",
+                "changedPaths": [path],
+                "checks": ["focused check passed"],
+                "remainingConcerns": ["None known"],
+            }
+        )
+    )
+
+    with pytest.raises(EvidenceError, match="unsafe|outside"):
+        validate_evidence(result, allowed_paths=["src/**"], actual_paths=[path])
+
+
+def test_worker_evidence_rejects_unreported_diff() -> None:
+    result = parse_worker_result(
+        json.dumps(
+            {
+                "status": "complete",
+                "provider": "claude",
+                "changedPaths": ["src/example.py"],
+                "checks": ["focused check passed"],
+                "remainingConcerns": ["None known"],
+            }
+        )
+    )
+
+    with pytest.raises(EvidenceError, match="do not match"):
+        validate_evidence(
+            result,
+            allowed_paths=["src/**"],
+            actual_paths=["src/example.py", "src/other.py"],
+        )
+
+
+def test_ledger_blocks_duplicate_local_writers(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path / "ledger.json")
+    ledger.begin_task(task_id="task-1", role="implementation", provider="claude")
+
+    with pytest.raises(LedgerBusyError, match="active writer"):
+        ledger.begin_task(task_id="task-1", role="implementation", provider="claude")
+
+
+def test_ledger_enforces_followup_order(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path / "ledger.json")
+    ledger.record_task(task_id="task-1", role="implementation", status="complete")
+
+    with pytest.raises(LedgerStateError, match="expects follow-up index 0"):
+        ledger.begin_task(
+            task_id="task-1",
+            role="implementation",
+            provider="claude",
+            followup_index=1,
+            max_followups=1,
+        )
+
+
 def test_dispatch_uses_an_argument_array_and_returns_session_id(tmp_path: Path) -> None:
     executable = tmp_path / "fake-grok"
     executable.write_text(
@@ -261,3 +414,47 @@ def test_dispatch_uses_an_argument_array_and_returns_session_id(tmp_path: Path) 
     assert result.return_code == 0
     assert result.session_id == "fake-session"
     assert "complete" in result.stdout
+
+
+def test_cli_dispatch_records_bounded_usage_and_session_state(tmp_path: Path, capsys) -> None:
+    executable = tmp_path / "fake-grok"
+    executable.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json\n"
+        "print(json.dumps({'session_id': 'fake-session', 'status': 'complete', "
+        "'usage': {'input_tokens': 11, 'output_tokens': 5}}))\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    ledger_path = tmp_path / "ledger.json"
+
+    exit_code = main(
+        [
+            "dispatch",
+            "--provider",
+            "grok",
+            "--prompt",
+            "Run the bounded task.",
+            "--model",
+            "default",
+            "--binary",
+            str(executable),
+            "--cwd",
+            str(tmp_path),
+            "--ledger",
+            str(ledger_path),
+            "--task-id",
+            "task-1",
+            "--role",
+            "implementation",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["sessionId"] == "fake-session"
+    assert payload["usage"] == {"inputTokens": 11, "outputTokens": 5}
+    task = Ledger(ledger_path).read()["tasks"]["task-1"]
+    assert task["status"] == "unverified"
+    assert task["threadId"] == "fake-session"
+    assert task["usage"] == {"inputTokens": 11, "outputTokens": 5}

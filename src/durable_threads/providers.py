@@ -95,6 +95,7 @@ class DispatchResult:
     stdout: str
     stderr: str
     session_id: str | None
+    usage: dict[str, int] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -103,6 +104,7 @@ class DispatchResult:
             "stdout": self.stdout,
             "stderr": self.stderr,
             "sessionId": self.session_id,
+            "usage": self.usage,
         }
 
 
@@ -461,7 +463,12 @@ def provider_status(provider: str | None = None) -> tuple[dict[str, Any], ...]:
 def _bounded(value: str, limit: int = 20_000) -> str:
     if len(value) <= limit:
         return value
-    return value[:limit] + "\n[output truncated]"
+    marker = "\n[output truncated]\n"
+    if limit <= len(marker) + 2:
+        return value[:limit]
+    head = (limit - len(marker)) // 2
+    tail = limit - len(marker) - head
+    return value[:head] + marker + value[-tail:]
 
 
 def _find_session_id(value: Any) -> str | None:
@@ -498,11 +505,69 @@ def extract_session_id(output: str) -> str | None:
         return None
 
 
+_USAGE_KEYS = {
+    "input_tokens": "inputTokens",
+    "inputTokens": "inputTokens",
+    "prompt_tokens": "inputTokens",
+    "promptTokens": "inputTokens",
+    "output_tokens": "outputTokens",
+    "outputTokens": "outputTokens",
+    "completion_tokens": "outputTokens",
+    "completionTokens": "outputTokens",
+    "total_tokens": "totalTokens",
+    "totalTokens": "totalTokens",
+}
+
+
+def _find_usage(value: Any) -> dict[str, int] | None:
+    if isinstance(value, dict):
+        found: dict[str, int] = {}
+        for key, item in value.items():
+            target = _USAGE_KEYS.get(key)
+            if target and isinstance(item, int) and not isinstance(item, bool) and item >= 0:
+                found[target] = item
+        if found:
+            return found
+        for key, item in value.items():
+            if key.casefold() in {"usage", "usage_metadata", "token_usage", "tokenusage"}:
+                nested = _find_usage(item)
+                if nested:
+                    return nested
+        for item in value.values():
+            nested = _find_usage(item)
+            if nested:
+                return nested
+    elif isinstance(value, list):
+        for item in value:
+            nested = _find_usage(item)
+            if nested:
+                return nested
+    return None
+
+
+def extract_usage(output: str) -> dict[str, int] | None:
+    """Extract common provider token counters without storing the response."""
+
+    for line in reversed(output.splitlines()):
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        usage = _find_usage(value)
+        if usage:
+            return usage
+    try:
+        return _find_usage(json.loads(output))
+    except json.JSONDecodeError:
+        return None
+
+
 def run_invocation(
     invocation: ProviderInvocation,
     *,
     cwd: str | Path,
     timeout_seconds: int = 3600,
+    max_output_chars: int = 20_000,
 ) -> DispatchResult:
     """Run one non-Codex provider call with no shell interpolation."""
 
@@ -510,6 +575,8 @@ def run_invocation(
         raise ProviderError("Codex uses native app actions and cannot run through this CLI")
     if isinstance(timeout_seconds, bool) or timeout_seconds < 1:
         raise ProviderError("timeout_seconds must be an integer >= 1")
+    if isinstance(max_output_chars, bool) or max_output_chars < 200:
+        raise ProviderError("max_output_chars must be an integer >= 200")
     working_directory = Path(cwd).expanduser()
     if not working_directory.is_dir():
         raise ProviderError(f"provider working directory not found: {working_directory}")
@@ -538,7 +605,8 @@ def run_invocation(
     return DispatchResult(
         provider=invocation.provider,
         return_code=completed.returncode,
-        stdout=_bounded(stdout),
-        stderr=_bounded(stderr),
+        stdout=_bounded(stdout, max_output_chars),
+        stderr=_bounded(stderr, max_output_chars),
         session_id=extract_session_id(stdout),
+        usage=extract_usage(stdout),
     )

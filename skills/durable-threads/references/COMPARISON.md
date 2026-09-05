@@ -30,6 +30,10 @@ evidence. It does not execute model output.
 Add a richer runtime adapter only after a second live comparison proves that it
 reduces total rework and handles usage-limit recovery correctly.
 
+The public claim is intentionally narrow. This repository is a packet and
+evidence control layer. It is not a workflow engine. It does not own automatic
+provider restart or provider-side writer recovery.
+
 ## Re-test plan
 
 Use the same small, reversible repository task for two runs:
@@ -40,3 +44,16 @@ Use the same small, reversible repository task for two runs:
 Hold the objective, allowed paths, acceptance checks, and reviewer policy
 constant. Measure correctness, test evidence, follow-up reliability, observed
 usage, number of workers, and recovery after quota or writer failure.
+
+Record these values for each run:
+
+- input and output tokens from every provider that reports them;
+- number of selected workers and provider calls;
+- follow-up count and correction count;
+- changed paths outside the allow-list;
+- failed checks and final correctness;
+- time to recover from quota and active-writer states.
+
+The result is not a benchmark until both runs use the same task, baseline
+commit, acceptance checks, and reviewer standard. A lower token count without
+equal correctness is not a win.

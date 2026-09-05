@@ -19,6 +19,7 @@
   },
   "policy": {
     "maxParallelWorkers": 2,
+    "maxSelectedWorkers": 2,
     "resultMaxChars": 2000,
     "allowThreadCreation": false
   },

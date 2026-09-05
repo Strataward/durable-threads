@@ -24,6 +24,7 @@
       "type": "object",
       "properties": {
         "maxParallelWorkers": { "type": "integer", "minimum": 1 },
+        "maxSelectedWorkers": { "type": "integer", "minimum": 1 },
         "resultMaxChars": { "type": "integer", "minimum": 200 },
         "allowThreadCreation": { "type": "boolean" }
       },
