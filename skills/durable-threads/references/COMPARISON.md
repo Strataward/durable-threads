@@ -18,10 +18,15 @@ state automatically.
 
 ## Decision
 
-Use the skill-first control plane as the default. It keeps the durable-thread
-benefit but leaves thread creation, sending, waiting, and recovery in the
-native Codex app actions. It avoids a second daemon and avoids a mandatory
-provider-specific CLI.
+The final same-model trial kept context in both arms. Direct continuation
+passed the same checks with fewer input tokens and no corrections. It is the
+default for related work when the current model and context are suitable.
+See the repository report at `docs/benchmarks/2026-09-05-retained-baseline.md`.
+
+Use direct execution for small tasks. Keep the skill as an experimental option
+for related work that can reuse context. Leave task creation, sending, waiting,
+and recovery in the native Codex app actions where available. A CLI-session
+comparison does not validate those app actions or the upstream runtime.
 
 Keep the helper library deterministic. It validates rosters, builds compact
 packets, resolves role selectors against a live catalog, and writes redacted
@@ -34,7 +39,10 @@ The public claim is intentionally narrow. This repository is a packet and
 evidence control layer. It is not a workflow engine. It does not own automatic
 provider restart or provider-side writer recovery.
 
-## Re-test plan
+## Remaining evidence gap
+
+The comparison below remains untested. It is not scheduled work. The final
+local decision does not require another run.
 
 Use the same small, reversible repository task for two runs:
 

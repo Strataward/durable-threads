@@ -53,14 +53,12 @@ _JSON_KEYS = {
 }
 
 
-def _values(value: Any) -> tuple[str, ...]:
-    if value is None:
-        return ()
-    if isinstance(value, str):
-        return (value.strip(),) if value.strip() else ()
-    if isinstance(value, list | tuple):
-        return tuple(item.strip() for item in value if isinstance(item, str) and item.strip())
-    return ()
+def _json_values(value: Any, field: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise EvidenceError(f"{field} must be an array of nonempty strings")
+    return tuple(item.strip() for item in value)
 
 
 def _json_payload(text: str) -> dict[str, Any] | None:
@@ -106,14 +104,20 @@ def parse_worker_result(text: str) -> WorkerEvidence:
         status = str(payload.get("status", "")).strip().casefold()
         provider_value = payload.get("provider")
         provider = provider_value.strip() if isinstance(provider_value, str) else None
-        changed = _values(payload.get("changedPaths", payload.get("changed_paths")))
-        checks = _values(payload.get("checks"))
-        concerns = _values(
+        changed = _json_values(
+            payload.get("changedPaths", payload.get("changed_paths")), "changedPaths"
+        )
+        checks = _json_values(payload.get("checks"), "checks")
+        concerns = _json_values(
             payload.get(
                 "remainingConcerns",
                 payload.get("remaining_concerns", payload.get("concerns")),
-            )
+            ),
+            "remainingConcerns",
         )
+        # An explicit empty array reports no concerns. A missing field still fails.
+        if not concerns:
+            concerns = ("None known",)
     else:
         status_match = re.search(r"^Status:\s*(\S+)", text, re.IGNORECASE | re.MULTILINE)
         provider_match = re.search(r"^Provider:\s*(\S+)", text, re.IGNORECASE | re.MULTILINE)

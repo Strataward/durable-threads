@@ -25,9 +25,15 @@ credentials. It does not enable dangerous auto-approval flags.
 
 ## Why this exists
 
-One strong planner should not perform every routine edit. A durable roster lets
-you keep separate worker context for implementation, tests, research, and
-security review.
+Delegation must earn its cost. Keep small tasks in one session. Continue related
+work there when its model and context are suitable. Use a worker only when a
+model or ownership handoff adds value. Keep routing instructions with the
+planner; workers receive only the bounded task packet.
+
+Read [when to use the skill](skills/durable-threads/references/WHEN_TO_USE.md)
+before choosing workers. Session reuse alone does not require this skill.
+An [optional Codex user rule](examples/codex-user-rules.md) applies this boundary
+across projects without replacing your other instructions.
 
 The design uses these controls:
 
@@ -314,9 +320,18 @@ This was a practical smoke test, not a benchmark. See
 [`skills/durable-threads/references/COMPARISON.md`](skills/durable-threads/references/COMPARISON.md)
 for the decision record.
 
-This evidence is a smoke test, not a benchmark. The repository does not claim
-that it uses fewer tokens until a controlled comparison measures correctness,
-follow-ups, rework, provider recovery, and total input and output tokens.
+A later [three-change context trial](docs/benchmarks/2026-09-05-context-reuse.md)
+compared fresh Codex CLI sessions with one resumed session. Both final code
+results passed independent checks. Persistence used fewer uncached input
+tokens, but total input differed by only 1.7%. Runner and result-format defects
+limit the comparison. Subscription savings remain unproven. Keep the skill
+optional; do not use it for every task.
+
+The [final retained-session comparison](docs/benchmarks/2026-09-05-retained-baseline.md)
+kept context in both approaches. Both passed all three steps without corrections.
+The protocol used 58.3% more input tokens. Use direct continuation for that
+workload. Keep the skill for handoffs that need its scope and evidence controls,
+not as a general subscription-saving layer.
 
 ## Development
 

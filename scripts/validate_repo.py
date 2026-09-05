@@ -27,6 +27,8 @@ def main() -> int:
     require("[TODO" not in content, "skill has an unfinished placeholder")
     for path in (root / "examples").glob("*.json"):
         json.loads(path.read_text(encoding="utf-8"))
+    for path in (root / "skills").rglob("*.schema.json"):
+        json.loads(path.read_text(encoding="utf-8"))
     print("repository files are valid")
     return 0
 

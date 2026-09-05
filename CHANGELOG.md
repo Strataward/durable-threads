@@ -7,6 +7,23 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Accept an explicit empty concerns array without a model correction. Missing fields still fail.
+
+- Persist the original task retry limit. Reject changes and legacy records without a limit.
+- Reject invalid JSON list fields instead of discarding invalid entries.
+
+### Changed
+
+- Prefer the current retained session when its model and context fit the work.
+- Add an optional output schema and a guide for deciding when a handoff adds value.
+- Record the final comparison against a direct retained session, not only fresh sessions.
+
+- Keep routing instructions with the planner. Send only the task packet to workers.
+- Prefer direct execution for small tasks and one persistent worker for related work.
+- Keep subscription savings unproven until a matched evaluation supports them.
+
 ### Added
 
 - Selective routing with explicit worker selection and a local-only route.

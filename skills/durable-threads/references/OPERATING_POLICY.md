@@ -19,8 +19,10 @@ The helper does not claim automatic recovery for provider quota errors, private
 active-writer state, or provider process failure. It records the stop state and
 requires a new authorized action.
 
-Change a limit only when the user requests it or when a measured evaluation
-supports the change.
+Set limits before a task starts. The ledger stores `maxFollowups` on the first
+call. Later calls must use that same limit. Old records without a limit stop
+for inspection. Do not clear a record or choose a new task ID to bypass a stop.
+An authorized policy change applies to new work, not retries of the same task.
 
 ## Fan-out rule
 

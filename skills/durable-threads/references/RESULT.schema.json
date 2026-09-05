@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "provider", "changedPaths", "checks", "remainingConcerns"],
+  "properties": {
+    "status": {"type": "string", "enum": ["complete", "blocked", "failed"]},
+    "provider": {"type": "string", "enum": ["codex", "claude", "grok", "cursor"]},
+    "changedPaths": {"type": "array", "items": {"type": "string"}},
+    "checks": {"type": "array", "items": {"type": "string"}},
+    "remainingConcerns": {"type": "array", "items": {"type": "string"}}
+  }
+}

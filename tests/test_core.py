@@ -380,14 +380,15 @@ def test_ledger_blocks_duplicate_local_writers(tmp_path: Path) -> None:
 
 def test_ledger_enforces_followup_order(tmp_path: Path) -> None:
     ledger = Ledger(tmp_path / "ledger.json")
-    ledger.record_task(task_id="task-1", role="implementation", status="complete")
+    ledger.begin_task(task_id="task-1", role="implementation", provider="claude")
+    ledger.record_task(task_id="task-1", role="implementation", status="failed")
 
-    with pytest.raises(LedgerStateError, match="expects follow-up index 0"):
+    with pytest.raises(LedgerStateError, match="expects follow-up index 1"):
         ledger.begin_task(
             task_id="task-1",
             role="implementation",
             provider="claude",
-            followup_index=1,
+            followup_index=0,
             max_followups=1,
         )
 

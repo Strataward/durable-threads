@@ -40,3 +40,15 @@ changes. Do not consume an account allowance merely to trigger a quota error.
 
 No controlled live comparison has established a token-saving percentage for
 this version. The earlier StoriBuk task remains smoke-test evidence only.
+
+A later three-change CLI trial showed lower uncached input with session reuse.
+It included a runner permission repair and a direct test correction. Parent
+usage and subscription cost remain unknown. It did not compare native app
+tasks with the upstream orchestrator. See the repository report at
+`docs/benchmarks/2026-09-05-context-reuse.md`.
+
+The final trial retained context in both arms. Both completed three steps
+without corrections. The protocol used more input tokens than direct execution.
+This supports direct continuation when the current model and context fit.
+See `docs/benchmarks/2026-09-05-retained-baseline.md` in the repository.
+Neither trial establishes subscription savings or validates cross-model routing.

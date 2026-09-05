@@ -54,13 +54,13 @@ resume controls. Codex uses the native task action. Use a focused follow-up
 that names the failed check.
 Do not resend the full original packet.
 
-Use at most one normal correction by default. Use a second correction only if
-the new evidence is concrete and the user has not asked for a strict limit.
+Use at most one correction by default. Set the limit before the task starts.
 
 The local ledger enforces the follow-up index. It rejects a provider change or
-session ID change during a follow-up. When the follow-up limit is reached,
-rotate to a new task or a newly authorized session. This limits stale context
-and gives the planner a clear compaction boundary.
+session ID change during a follow-up. It also rejects a changed retry limit.
+Stop when the limit is reached. Do not rotate IDs to retry the same failed work.
+A new, distinct objective can reuse an idle session with a new task record.
+This is new work, not a correction. Keep both records for review.
 
 ## Recovery states
 

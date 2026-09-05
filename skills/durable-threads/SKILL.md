@@ -1,136 +1,77 @@
 ---
 name: durable-threads
-description: Coordinate complex software work through named durable sessions across Codex, Claude, Grok, and Cursor with compact context and evidence-based review. Use when a task benefits from persistent specialist sessions. Do not use for a simple one-session request.
+description: Coordinate bounded work across separate provider sessions when model specialization or independent ownership requires a handoff. Do not use merely to continue related edits in a suitable current task.
 ---
 
 # Durable Threads
 
-Use this skill when the user wants a planner to route work through named,
-persistent worker sessions.
+Keep simple work in the current task. Continue related edits there when its
+model and context are suitable. When a handoff is useful, prefer one existing
+worker. Add a second worker only for independent work. Do not delegate merely
+because this skill is loaded.
 
-Durability covers identity and recorded evidence. Provider recovery remains a
-planner responsibility. Keep simple work in the current task. Use `plan --local`
-for zero workers. Inspect automatic routing before dispatch. Use `--worker` to
-select exact workers when keyword routing does not match the task.
+If the current task already has the right context and model, continue there.
+Use a worker for a cheaper suitable model, narrower context, or independent
+ownership. Session reuse alone does not require this skill.
+Read `references/WHEN_TO_USE.md` when the choice is unclear.
 
-Use `verify-result` to compare claimed paths with the actual diff. This checks
-the evidence contract; it does not execute the claimed test commands. Run the
-acceptance checks yourself before integration. Record unknown token usage as
-unknown. Do not treat a successful provider exit as verified completion.
+The planner owns scope, model selection, review, and integration. Workers need
+the task packet, not this skill or the planner's conversation. Read only the
+reference needed for the current operation.
 
-## Operating model
+## Send work
 
-Keep the current task as the planner and integration owner. Use the current
-task for architecture, scope, user decisions, and final review. Use named
-worker sessions for bounded implementation, tests, research, documentation, or
-security work.
+1. Define the task, allowed paths, exact acceptance checks, and constraints.
+2. Resolve the idle worker by its recorded provider and session ID.
+3. Send the packet with the JSON result shape below.
+4. Wait for completion without repeated transcript reads.
+5. Inspect the diff and run the acceptance checks before integration.
 
-Use this order:
+Use the least expensive available model that passes the task checks. Reserve
+frontier reasoning for difficult planning or review. Verify model availability;
+do not guess IDs or change providers without disclosure. Read
+`references/ASTRA.md` only when selecting a frontier Codex model.
 
-1. Inspect the repository and the current request.
-2. Inspect provider availability and current model limits.
-3. Make a short plan with independent work units.
-4. Resolve each worker by its exact title and provider.
-5. Send one compact packet to each idle worker.
-6. Wait for worker completion with one bounded wait call when the runtime supports it.
-7. Read structured evidence and inspect the actual diff.
-8. Ask for one focused correction only when the evidence identifies a defect.
-9. Review the final result in the current task.
-10. Integrate, commit, push, or deploy only when the user authorizes that action.
+For native Codex tasks, read `references/PERSISTENT_THREADS.md`. Use the app's
+list, send, wait, and read actions. Create a new task only with explicit user
+authorization. For Claude, Grok, or Cursor, read `references/PROVIDERS.md`.
+The CLI helper does not dispatch Codex. State when an evaluation uses Codex CLI
+sessions instead of native app tasks.
 
-Read the relevant reference before the operation:
+## Keep limits
 
-- Read `references/ASTRA.md` when selecting a frontier Codex planner or reviewer.
-- Read `references/PROVIDERS.md` when a worker uses Claude, Grok, or Cursor.
-- Read `references/PERSISTENT_THREADS.md` when resolving, resuming, or stopping workers.
-- Read `references/OPERATING_POLICY.md` for concurrency, budget, and recovery limits.
-- Read `references/RESULT_SCHEMA.md` before sending a packet or accepting a result.
-- Read `references/COMPARISON.md` when comparing this approach with another orchestrator.
+Default to at most two workers and one correction for a demonstrated defect.
+Read `references/OPERATING_POLICY.md` before dispatch or recovery. Keep the
+original retry limit for the task. Stop on quota, authentication failure,
+uncertain writer state, or exhausted retries. Do not retry until the cause is
+resolved. An existing session ID does not prove safe execution recovery.
 
-## Provider policy
+Keep session IDs and compact evidence in ignored local state. Do not send
+secrets, private data, or transcripts. A packet's allowed paths do not prevent
+writes. Use isolation and inspect all changed paths. Commit, push, merge, and
+deploy only with user authorization.
 
-Use the provider that matches the worker task. Keep provider session IDs in
-local ignored state. Do not copy a full transcript into a new packet.
+## Worker result
 
-- Codex uses native Codex app actions. Use `list_threads`,
-  `send_message_to_thread`, `wait_threads`, and `read_thread` when they are
-  available.
-- Claude uses Claude Code. Use `claude -p` for headless work and `--resume`
-  for an existing session. Use `--output-format json`.
-- Grok uses Grok Build. Use `grok -p` for headless work, `--resume` for an
-  existing session, `--no-auto-update` in automation, and JSON output.
-- Cursor uses Cursor Agent. Use `agent` when the current installation provides
-  it. Use `cursor-agent` as the compatibility executable. Use `--resume` and
-  JSON output.
+Include this shape in the packet. The provider identifies the worker itself.
+Use empty arrays for no changed paths. Record exact checks and their results.
+An explicit empty concerns array means no concerns. Missing fields still fail.
+When supported, use `references/RESULT.schema.json` as the output schema.
 
-Use `durable-threads provider-command` to inspect the exact provider command
-before a new integration. Use `durable-threads dispatch` only after the user
-authorizes the provider call. The helper never enables dangerous auto-approval
-flags.
+```json
+{
+  "status": "complete",
+  "provider": "codex",
+  "changedPaths": [],
+  "checks": ["exact command: passed"],
+  "remainingConcerns": ["None known"]
+}
+```
 
-Treat generic model roles as policy, not as provider model IDs. Claude maps
-`frontier`, `balanced`, and `efficient` to the stable aliases `opus`, `sonnet`,
-and `haiku`. Grok and Cursor require `default` or a provider-visible model ID.
-Do not guess a model ID for either provider.
+Use `blocked` or `failed` when work cannot complete. Do not report unexecuted
+checks as passed. Read `references/RESULT_SCHEMA.md` for verification details.
+`verify-result` checks claims against the diff; it does not run tests.
 
-## Model and token policy
-
-Treat model labels as roles, not as guaranteed model IDs. Use live discovery.
-Do not invent a model ID. Use the strongest available model for planning and
-review when the task needs it. Use the cheapest model that can satisfy the
-worker acceptance checks for routine execution.
-
-Use Astra for difficult planning and review when the current Codex runtime
-exposes it. Do not send every worker to Astra. Do not replace a missing model
-silently. Report the fallback and the reason.
-
-Use reasoning effort as a measured control. Start with `high` for a difficult
-planner or reviewer. Use `medium` or `low` for bounded worker tasks. Use
-`xhigh` or `max` only when a representative evaluation shows a quality gain
-that justifies the extra usage.
-
-Read `references/ASTRA.md` for the full policy.
-
-## Context policy
-
-Pass the smallest useful packet. Include the objective, allowed paths,
-acceptance checks, constraints, provider, model selector, and result contract.
-Do not paste a full conversation or an entire repository into a worker packet.
-
-Use native notes and searchable history when the provider supports them. Keep
-durable context in the provider session. Use a local roster or ledger only for
-role metadata, provider session IDs, statuses, and compact evidence.
-
-## Session policy
-
-Use `list_threads` before creating or selecting a Codex worker. Match the exact
-title and provider. Use the provider's resume flag for Claude, Grok, and
-Cursor. Do not create a second session with a similar title.
-
-Create a new worker only when the user authorizes it, no matching worker
-exists, and the roster allows creation. Record the new provider session ID in
-local ignored state.
-
-Do not resume an active writer. Wait for a state change or stop the exact
-stale task after reviewing its last evidence. If a provider reports a usage or
-authorization limit, record the failure and stop retries until the limit resets
-or a declared fallback is available.
-
-## Result policy
-
-Accept a worker result only when it includes:
-
-- changed paths;
-- exact checks and results;
-- remaining concerns;
-- no secrets, private data, or full transcript.
-
-The worker's claim is not proof. Inspect the diff and run the required checks
-in the current task before integration.
-
-## Safety boundary
-
-Do not place credentials, environment values, private child or family data, or
-raw provider transcripts in packets, ledgers, issues, or commits. Keep paths
-and scope narrow. Stop before destructive, external, or production actions
-unless the user authorized them.
+For comparisons, read `references/VALIDATION.md` and `references/COMPARISON.md`.
+Count planning, worker calls, review, and corrections. Keep missing usage and
+subscription cost unknown. Do not claim savings from raw token counts alone.

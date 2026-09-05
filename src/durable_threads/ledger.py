@@ -153,13 +153,15 @@ class Ledger:
         a provider has no external writer. Provider status remains a hard stop.
         """
 
+        if type(followup_index) is not int or type(max_followups) is not int:
+            raise LedgerStateError("follow-up index and limit must be integers")
         if followup_index < 0 or max_followups < 0 or followup_index > max_followups:
             raise LedgerStateError(f"followup index must be between 0 and {max_followups}")
         data = self.read()
         tasks = data.setdefault("tasks", {})
         existing = tasks.get(task_id, {})
-        if not isinstance(existing, dict):
-            existing = {}
+        if task_id in tasks and (not isinstance(existing, dict) or not existing):
+            raise LedgerStateError("task has invalid recorded state; inspect it first")
         if existing.get("status") == "running":
             raise LedgerBusyError(f"task {task_id!r} already has a local active writer")
         existing_provider = existing.get("provider")
@@ -172,9 +174,16 @@ class Ledger:
             raise LedgerStateError(f"task {task_id!r} requires its recorded provider session ID")
         if existing_thread and not thread_id:
             raise LedgerStateError(f"task {task_id!r} cannot resume without its session ID")
-        recorded_followups = existing.get("followups", -1) + 1
-        if not isinstance(recorded_followups, int) or recorded_followups < 0:
+        if existing:
+            original_limit = existing.get("maxFollowups")
+            if type(original_limit) is not int or original_limit < 0:
+                raise LedgerStateError("task has no valid recorded retry limit; inspect it first")
+            if max_followups != original_limit:
+                raise LedgerStateError("task retry limit cannot change")
+        previous_index = existing.get("followups") if existing else -1
+        if type(previous_index) is not int or previous_index < (0 if existing else -1):
             raise LedgerStateError(f"task {task_id!r} has invalid follow-up state")
+        recorded_followups = previous_index + 1
         if followup_index != recorded_followups:
             raise LedgerStateError(
                 f"task {task_id!r} expects follow-up index {recorded_followups}, "
@@ -189,6 +198,7 @@ class Ledger:
             "provider": provider,
             "status": "running",
             "followups": followup_index,
+            "maxFollowups": max_followups,
             "updatedAt": _now(),
         }
         if thread_id:
