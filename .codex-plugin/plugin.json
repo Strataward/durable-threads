@@ -1,0 +1,35 @@
+{
+  "name": "codex-thread-loom",
+  "version": "0.1.0",
+  "description": "Coordinate durable Codex worker threads with frontier planning, efficient execution, and evidence-based review.",
+  "author": {
+    "name": "Waleed Dogar",
+    "url": "https://github.com/waleeddogar"
+  },
+  "homepage": "https://github.com/waleeddogar/codex-thread-loom",
+  "repository": "https://github.com/waleeddogar/codex-thread-loom",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "threads",
+    "orchestration",
+    "agents",
+    "context-management",
+    "software-engineering"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Thread Loom",
+    "shortDescription": "Route work through durable Codex threads",
+    "longDescription": "Use a strong planning and review thread with named, durable worker threads. Discover current model IDs, route routine work to efficient models, keep packets compact, and require evidence before integration.",
+    "developerName": "Waleed Dogar",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Use $codex-thread-loom to plan and route this work.",
+      "Use $codex-thread-loom with named worker threads.",
+      "Use $codex-thread-loom to review this change with evidence."
+    ],
+    "brandColor": "#4F46E5"
+  }
+}

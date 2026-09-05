@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/waleeddogar/codex-thread-loom/schemas/roster.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "project", "defaults", "workers"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 } },
+      "additionalProperties": false
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["planner", "reviewer"],
+      "properties": {
+        "planner": { "$ref": "#/$defs/role" },
+        "reviewer": { "$ref": "#/$defs/role" }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "maxParallelWorkers": { "type": "integer", "minimum": 1 },
+        "resultMaxChars": { "type": "integer", "minimum": 200 },
+        "allowThreadCreation": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "workers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/worker" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "role": {
+      "type": "object",
+      "required": ["role", "modelSelector", "reasoningEffort"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "modelSelector": { "type": "string", "minLength": 1 },
+        "reasoningEffort": {
+          "enum": ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "worker": {
+      "type": "object",
+      "required": ["name", "role", "threadTitle", "purpose", "modelSelector"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "threadTitle": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "threadId": { "type": ["string", "null"] },
+        "modelSelector": { "type": "string", "minLength": 1 },
+        "reasoningEffort": {
+          "enum": ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+        },
+        "maxFollowups": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "parallel": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

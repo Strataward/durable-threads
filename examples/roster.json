@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "example-project"
+  },
+  "defaults": {
+    "planner": {
+      "role": "planner",
+      "modelSelector": "frontier",
+      "reasoningEffort": "high"
+    },
+    "reviewer": {
+      "role": "reviewer",
+      "modelSelector": "frontier",
+      "reasoningEffort": "medium"
+    }
+  },
+  "policy": {
+    "maxParallelWorkers": 2,
+    "resultMaxChars": 2000,
+    "allowThreadCreation": false
+  },
+  "workers": [
+    {
+      "name": "implementation",
+      "role": "implementation",
+      "threadTitle": "Worker: implementation",
+      "purpose": "Make bounded code changes in the allowed paths.",
+      "modelSelector": "efficient",
+      "reasoningEffort": "low",
+      "maxFollowups": 1,
+      "parallel": false
+    },
+    {
+      "name": "test-debug",
+      "role": "test-debug",
+      "threadTitle": "Worker: test and debug",
+      "purpose": "Add regression tests and diagnose focused failures.",
+      "modelSelector": "balanced",
+      "reasoningEffort": "medium",
+      "maxFollowups": 1,
+      "parallel": true
+    },
+    {
+      "name": "research-docs",
+      "role": "research-docs",
+      "threadTitle": "Worker: research and docs",
+      "purpose": "Collect repository facts and update bounded documentation.",
+      "modelSelector": "efficient",
+      "reasoningEffort": "low",
+      "maxFollowups": 1,
+      "parallel": true
+    },
+    {
+      "name": "security-review",
+      "role": "security-review",
+      "threadTitle": "Worker: security review",
+      "purpose": "Review the diff for security and privacy regressions.",
+      "modelSelector": "frontier",
+      "reasoningEffort": "medium",
+      "maxFollowups": 1,
+      "parallel": true
+    }
+  ]
+}

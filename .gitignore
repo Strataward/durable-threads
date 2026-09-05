@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+.DS_Store
+
+# Local thread identifiers and run state can identify private projects.
+.codex-thread-loom/
+.codex/loom/
+examples/local-roster.json

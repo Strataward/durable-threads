@@ -1,0 +1,7 @@
+interface:
+  display_name: "Codex Thread Loom"
+  short_description: "Route work through durable Codex threads"
+  default_prompt: "Use $codex-thread-loom to route this work through named Codex threads and verify the result."
+
+policy:
+  allow_implicit_invocation: true

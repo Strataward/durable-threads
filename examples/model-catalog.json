@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "id": "current-frontier-id",
+      "displayName": "Current frontier model",
+      "tier": "frontier"
+    },
+    {
+      "id": "current-balanced-id",
+      "displayName": "Current balanced model",
+      "tier": "balanced"
+    },
+    {
+      "id": "current-efficient-id",
+      "displayName": "Current efficient model",
+      "tier": "efficient",
+      "isDefault": true
+    }
+  ]
+}
