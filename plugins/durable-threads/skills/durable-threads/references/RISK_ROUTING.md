@@ -1,50 +1,31 @@
 # Risk-aware routing
 
-Durable Threads separates **task difficulty** from **task consequence**. A mechanically simple change can still be high risk if it touches authentication, payments, privacy, destructive data operations, concurrency, or production recovery.
+Durable Threads separates **task difficulty** from **task consequence**. A difficult algorithm behind a stable internal interface can be contained; a one-line authorization predicate can be critical.
 
-Risk controls how much independent reasoning and review the workflow buys.
+Risk determines how much independent reasoning and review the workflow buys. It does not automatically determine which model writes every line of code.
 
 ## Risk ladder
 
 ```mermaid
-flowchart TB
-    R0["R0 · Mechanical<br/>deterministic checks"] --> R1["R1 · Bounded<br/>efficient workhorse"]
-    R1 --> R2["R2 · Integration<br/>integration review"]
-    R2 --> R3["R3 · Critical<br/>frontier / specialist review"]
-    R3 --> R4["R4 · Systemic<br/>frontier architecture + review"]
+flowchart LR
+    R0["R0<br/>Mechanical"] --> R1["R1<br/>Bounded"] --> R2["R2<br/>Integration"] --> R3["R3<br/>Critical"] --> R4["R4<br/>Systemic"]
 ```
 
-Higher risk means stronger independent review by default. It does **not** automatically mean the implementation worker must be a frontier model.
-
-## Risk classes
-
-### R0 — mechanical
-
-Documentation-only edits, formatting, typo correction, narrow comments, or deterministic renames. Default posture: local execution or one efficient worker plus deterministic verification.
-
-### R1 — bounded
-
-Isolated feature work, focused bug fixes, self-contained components, or local refactors with stable interfaces. Default posture: efficient/xhigh workhorse, focused checks, efficient review when useful.
-
-### R2 — integration
-
-Public API contracts, webhooks, queues/caches, dependency upgrades, multi-module changes, or non-destructive schema interaction. Default posture: stronger planning, efficient/xhigh execution, integration checks, independent review.
-
-### R3 — critical
-
-Authentication/authorization, payments, credentials, PII/privacy, destructive migration paths, concurrency/locking/races/idempotency, and production security boundaries. Default posture: frontier planning where ambiguity exists, efficient/xhigh execution, deterministic verification, frontier/specialist review.
-
-### R4 — systemic
-
-Distributed architecture, multi-region state, control-plane/data-plane changes, cross-service consistency, platform migrations, and disaster recovery. Default posture: frontier planning/final review with bounded workhorse execution between decision points.
+| Class | Meaning | Default posture |
+| --- | --- | --- |
+| R0 | docs, formatting, deterministic rename | local/efficient execution + deterministic checks |
+| R1 | isolated feature, bug, local refactor | efficient high-reasoning workhorse + focused checks |
+| R2 | API contract, queue/cache, dependency or multi-module change | stronger planning + integration-focused review |
+| R3 | auth, payments, credentials, privacy, destructive migration, concurrency | frontier planning when ambiguous + independent specialist/frontier review |
+| R4 | distributed state, control plane, multi-region/recovery design | frontier architecture/final review + bounded workhorse execution |
 
 ## Deterministic classifier
 
-`durable_threads.risk.classify_risk` uses inspectable keyword signals and accepts an explicit override. It intentionally does not call a model. This is a routing hint, not a security boundary.
+`durable_threads.risk.classify_risk` uses inspectable keyword signals and accepts an explicit override. It intentionally does not call a model. The result is a routing hint, not a security boundary.
 
 ## Frontier review threshold
 
-`strategy.frontierReviewAt` defines the minimum risk where the plan should recommend frontier review. The default economy profile uses `R3`.
+`strategy.frontierReviewAt` sets the minimum risk where the helper recommends frontier review. The default economy profile uses `R3`:
 
 ```json
 {
@@ -59,18 +40,18 @@ Distributed architecture, multi-region state, control-plane/data-plane changes, 
 
 ## Difficulty is separate
 
-A difficult algorithm behind a stable interface may be R1/R2. A one-line authorization predicate may be R3. Model effort addresses cognitive difficulty; risk determines consequence and review posture.
+Model effort addresses cognitive difficulty. Risk addresses blast radius and review posture. These axes often correlate, but they are not the same thing.
 
-## Routing examples
+Examples:
 
 | Task | Risk | Suggested route |
 | --- | --- | --- |
 | README typo | R0 | local or one efficient worker |
-| isolated parsing bug | R1 | efficient/xhigh implementation + tests |
-| webhook contract change | R2 | balanced planning, efficient/xhigh execution, integration review |
-| refresh-token replay fix | R3 | frontier low/medium planning, efficient/xhigh execution, frontier review |
+| isolated parsing bug | R1 | efficient/XHigh implementation + tests |
+| webhook contract change | R2 | balanced planning, efficient/XHigh execution, integration review |
+| refresh-token replay fix | R3 | frontier low/medium planning, efficient/XHigh execution, frontier review |
 | multi-region failover redesign | R4 | frontier medium/high planning, bounded workers, frontier final review |
 
 ## Override discipline
 
-An explicit risk override should be recorded with the plan. Lowering an automatically detected R3/R4 class should state why. Do not lower risk simply to avoid frontier usage.
+Record explicit risk overrides with the plan. If you lower an automatically detected R3/R4 class, state why repository facts make the lower class appropriate. Do not lower risk just to avoid frontier usage.

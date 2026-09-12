@@ -1,8 +1,10 @@
 # Model economics
 
-Durable Threads optimizes **accepted engineering work per constrained unit of model capacity**, not raw token minimization and not first-pass benchmark prestige.
+The goal is not to minimize tokens. It is to maximize **accepted, correct engineering work while preserving the scarce model capacity that matters most**.
 
-> Put scarce intelligence on consequential decisions. Put long-running execution on the cheapest model/effort combination that reliably passes acceptance.
+> Put scarce intelligence on consequential decisions. Put sustained execution on the least expensive model/effort combination that reliably passes acceptance.
+
+This is a project policy and an empirical hypothesis, not an OpenAI guarantee. Defaults should move when matched evaluations show a better route.
 
 ## Economic roles
 
@@ -13,66 +15,70 @@ Durable Threads optimizes **accepted engineering work per constrained unit of mo
 | `review` | independent acceptance | diff review, integration review, acceptance validation |
 | `specialist` | domain-specific high-risk analysis | security, privacy, destructive migrations, recovery |
 
-A model can serve more than one class, but a roster should make the intended economics explicit.
+A model can serve more than one role. The point of the classes is to make the intended economics explicit rather than letting the strongest available model become the default for every step.
 
-## Default Plus profile
+## Current Plus-oriented starting point
 
-As of September 2026, the recommended Codex/Work profile for users optimizing included Plus allowance is:
+As of September 2026, a useful starting policy for users optimizing included ChatGPT Plus allowance in Codex/Work is:
 
-- planner: frontier/low only when the task genuinely needs frontier planning; balanced/medium is often sufficient;
-- implementation: efficient/xhigh;
-- focused debugging: efficient/xhigh;
-- tests: efficient/high or efficient/xhigh;
-- first-line review: efficient/xhigh;
-- critical review: frontier/medium;
-- frontier/xhigh or frontier/max: evidence-gated exceptions.
+| Work | Starting policy |
+| --- | --- |
+| routine or bounded implementation | efficient + high/XHigh |
+| focused debugging | efficient + high/XHigh |
+| tests and mechanical validation | efficient + high when model reasoning is needed; deterministic tools first |
+| difficult general planning | balanced + medium |
+| first-line model review | efficient + high/XHigh |
+| consequential architecture or R3/R4 review | frontier + low/medium |
+| frontier high/XHigh/max | evidence-gated exception |
 
-For OpenAI's current family this often maps to Astra for frontier decisions and Luna XHigh for execution. Do not hard-code those names when a live catalog is available.
+With OpenAI's current family, this can map to Luna XHigh for sustained execution and Astra Low/Medium for consequential decisions. Do not hard-code those names when a live catalog is available.
 
-## Why efficient XHigh execution is rational
+## Why efficient XHigh execution can work
 
-The implementation worker is not being asked to solve the entire product problem. The planner should already have frozen architecture decisions, bounded paths, acceptance checks, invariants, and non-goals. High reasoning effort on an efficient model is therefore applied to a constrained search space.
+A workhorse should not be asked to rediscover the whole product problem. Before dispatch, the planner should have resolved important architecture choices and supplied bounded paths, acceptance checks, invariants, and non-goals.
 
-A task can afford an implementation pass, deterministic checks, a workhorse review, one focused correction, and frontier escalation only if failure evidence remains. The relevant measure is final accepted correctness after verification.
+That changes the search space. High reasoning effort on an efficient model is being spent on **how to execute a chosen design**, not on repeatedly deciding what the design should be.
+
+The relevant outcome is final accepted correctness after verification, including corrections—not first-pass prestige.
 
 ## Evidence-gated escalation
 
-The default ladder is deliberately short:
+Keep the default ladder short:
 
 ```mermaid
-flowchart TB
-    E["Efficient · XHigh"] -->|"repeated acceptance failure"| B["Balanced · Medium"]
-    B -->|"architecture ambiguity"| F1["Frontier · Low"]
-    F1 -->|"hard unresolved decision"| F2["Frontier · Medium"]
-    F2 -->|"exception only"| FX["Frontier · High+"]
+flowchart LR
+    E["Efficient<br/>XHigh"] -->|"repeated acceptance failure"| B["Balanced<br/>Medium"]
+    B -->|"architecture ambiguity"| F1["Frontier<br/>Low"]
+    F1 -->|"hard unresolved decision"| F2["Frontier<br/>Medium"]
+    F2 -->|"exception only"| FX["Frontier<br/>High+"]
 ```
 
-Higher frontier effort is outside the normal path. Concrete escalation evidence includes repeated acceptance failure, missing architecture decisions, conflicting parallel tasks, cross-module invariant failures, plausible security findings, or inability to make a critical change reversible.
+Concrete escalation evidence includes repeated acceptance failures, missing architecture decisions, conflicting parallel tasks, cross-module invariant failures, credible security findings, or an inability to make a critical change reversible.
 
-Do not escalate because a task merely looks important.
+Do not escalate simply because the task looks important.
 
 ## Sleeping orchestrator
 
-When `strategy.sleepingOrchestrator` is true, the planner must not remain in a short polling loop while workers execute. Decide, dispatch, wait through an event-driven/bounded provider mechanism, and wake on completion or material evidence.
+When `strategy.sleepingOrchestrator` is true, the planner should decide, dispatch, and then wait without repeated no-op parent resampling. Wake on completion, failure, material evidence, or another real decision boundary.
 
-Short no-op polling can repeatedly re-enter a large parent context. Relevant Codex reports include:
+Relevant Codex reports:
 
 - https://github.com/openai/codex/issues/35108
 - https://github.com/openai/codex/issues/41875
 
 ## Fast mode
 
-When allowance longevity matters, keep Fast mode off by default. Fast mode is a latency optimization, not an intelligence upgrade.
+When allowance longevity matters, keep Fast mode off by default. Fast mode is a latency choice and consumes included allowance faster; it is not an intelligence upgrade.
 
 ## Context economics
 
-Large context windows are capacity, not a target. Prefer retained sessions while their context is relevant, compact packets, repository state files, exact path scopes, summaries of failed approaches, and fresh bounded workers when old context becomes misleading.
+A large context window is capacity, not a target. Prefer compact contracts, retained sessions while their context is still relevant, exact path scopes, summaries of failed approaches, and a fresh bounded worker when old context becomes misleading.
 
 ## Measuring value
 
-Record, when available: input tokens, cached input, output tokens, reasoning tokens, wall time, workers selected, follow-ups, first-pass acceptance, deterministic failures, review defects, correction count, final acceptance, model selector/effort, risk class, and task class.
+Record what the provider actually exposes: input tokens, cached input, output tokens, reasoning tokens, wall time, model turns, parent turns, selected workers, follow-ups, deterministic failures, review defects, corrections, first-pass acceptance, final acceptance, model selector/effort, task class, and risk class.
 
-Do not claim savings from packet size alone. Compare matched tasks against direct single-agent baselines.
+Do not infer subscription savings from packet size alone. Compare matched tasks against a direct retained-session baseline and keep correctness gates identical.
 
 ## Current OpenAI references
 

@@ -1,73 +1,50 @@
 # When to use Durable Threads
 
-The final local trial favored a direct retained session for three related
-changes with the same model. Both approaches passed. The protocol used more
-input tokens. Keep direct continuation as the default for that workload.
+Use Durable Threads when a handoff buys something concrete: **a cheaper suitable executor, narrower context, independent ownership, durable specialist context, or stronger review boundaries**.
 
-Use the simplest mode that meets the task requirements. A persistent session
-is useful without an orchestration skill. The skill adds scope, evidence, and
-stop rules when work crosses an ownership boundary.
+If none of those benefits applies, keep the work in the current task. Orchestration is overhead, and the skill should earn that overhead rather than create ceremony.
 
-| Situation | Starting mode | Reason |
+| Situation | Starting mode | Why |
 | --- | --- | --- |
-| Small fix, question, or one-file review | Current task | A handoff adds work. |
-| Related edits; current task has the right model and context | Continue the current task | Keep context without another owner. |
-| Bounded implementation that a cheaper model can complete | One worker, with this skill | Separate planning from routine execution. |
-| Specialist work that benefits from narrower context | One worker, with this skill | Keep unrelated history out of the packet. |
-| Independent changes with separate allowed paths | At most two workers | Parallel work must not create conflicting writers. |
-| Quota, authentication failure, or uncertain writer state | Stop | A new session is not a recovery procedure. |
+| Small fix, question, or one-file review | Current task | A handoff adds more coordination than value. |
+| Related edits where the current task has the right model and context | Continue the current task | Retain useful context without adding another owner. |
+| Bounded implementation a cheaper model can reliably execute | One worker | Separate high-leverage decisions from sustained execution. |
+| Specialist work that benefits from narrow context | One worker | Isolate the relevant evidence and avoid unrelated history. |
+| Independent changes with disjoint write scopes | At most two workers | Parallelism is useful only when writers do not conflict. |
+| Quota, authentication failure, or uncertain writer state | Stop | A fresh task ID is not a recovery mechanism. |
 
-These are planner rules, not an automatic classifier. The helper's keyword
-routing does not prove that a handoff will save tokens. Inspect each proposal.
-Use `plan --local` when no worker is needed.
+## Before delegating
 
-## Start a worker only for a stated benefit
+State the reason for the handoff in one sentence. Good reasons include “Luna XHigh can execute this frozen design,” “the security reviewer should not inherit the implementation transcript,” or “these two tasks have disjoint paths and can proceed independently.”
 
-State the benefit in one sentence: a cheaper suitable model, narrower context,
-or independent ownership. If none applies, continue in the current task.
-Use the frontier model for difficult decisions and final risk review, not for
-every status check or routine edit. Model substitution benefits remain a
-hypothesis until measured for that workload.
+If the reason is only “multi-agent sounds better,” do not delegate.
 
-Give the worker the objective, allowed paths, acceptance commands, constraints,
-and result shape. Do not send the full chat or the planner skill. Prefer one
-worker for related implementation. Create a new app task only when the user
-explicitly requests it. Otherwise use an authorized existing worker or work
-in the current task.
+Give the worker a bounded implementation contract: objective, decisions already made, invariants, non-goals, allowed paths, acceptance commands, constraints, and result shape. Do not send the entire planner conversation by default.
 
-## Before sending
+Before dispatch, confirm the provider/model, working directory, available permissions, session identity when resuming, and that acceptance commands are runnable. For write tasks, use a clean or otherwise inspectable checkout.
 
-Confirm the provider, model, session ID, working directory, idle state, and
-permissions. Confirm that dependencies and acceptance commands work. Use a
-clean isolated checkout when the worker will write files. Record the original
-retry limit before execution. Do not change these settings during a comparison.
+## Accept work on evidence
 
-In Codex CLI evaluations, set the sandbox on the parent command for both new
-and resumed execution: `codex exec --sandbox workspace-write resume ...`.
-This is a tested CLI path, not a replacement for native app task actions.
+A correctly shaped result is not proof that the code is correct. Inspect changed paths and independently run the checks that matter.
 
-## Accept work without needless corrections
+Use at most one focused correction by default. A correction should name a concrete failed check or review finding, preserve decisions that have not changed, and keep the original scope unless new evidence invalidates it.
 
-Use the supplied JSON schema where supported. Then validate the result against
-the actual changed paths. An explicit empty concerns array means no concerns.
-A missing field remains an error. Do not ask a model to rewrite valid empty
-arrays into prose.
+If the correction fails for the same conceptual reason, stop or escalate according to policy. Do not rotate task IDs to manufacture more retries.
 
-Run acceptance commands independently. Do not accept code because its result
-has the right format. Use at most one correction for a demonstrated defect.
-If the correction fails, stop and report the unresolved issue. Do not change
-task IDs to obtain more retries. New, distinct work can reuse an idle session.
+## What our local trials actually showed
 
-## Judge value
+Durable Threads does not assume that orchestration always saves tokens. The repo's retained-session trial is a useful counterexample: both arms preserved context, both completed the three related changes, and direct continuation used fewer input tokens. For that workload, staying in the current task was better.
 
-Compare against a direct session that also retains context. A fresh session
-for every edit is a separate baseline and can overstate the value of the skill.
+See `docs/benchmarks/2026-09-05-retained-baseline.md`.
 
-Keep code correctness and allowed paths as gates. Then compare total calls,
-corrections, elapsed time, and all provider counters. Show cached input
-separately. Include planner and reviewer usage when available. Mark missing
-usage and subscription cost as unknown.
+An earlier context-reuse trial showed lower uncached input with session reuse but also included a runner permission repair and a direct test correction, so it is not strong evidence for subscription savings. See `docs/benchmarks/2026-09-05-context-reuse.md`.
 
-Do not require a fixed saving percentage from every small task. Keep the skill
-only where its scope and evidence controls justify the extra work. Do not claim
-that raw token savings extend a subscription by the same percentage.
+These results are why the current policy starts with **“does a handoff help?”** rather than automatically spawning workers.
+
+## How to judge value
+
+Compare against a direct session that also retains context. A fresh session for every edit is a different baseline and can exaggerate the benefit of persistence.
+
+Keep correctness and allowed paths as gates. Then compare provider calls, parent turns, corrections, elapsed time, reported usage counters, review defects, and final acceptance. Keep cached input separate and mark missing usage or subscription cost as unknown.
+
+Do not translate a raw token percentage directly into a subscription-savings percentage unless the provider exposes evidence that supports that conclusion.

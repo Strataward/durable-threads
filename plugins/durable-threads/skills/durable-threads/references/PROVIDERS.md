@@ -1,26 +1,25 @@
 # Provider adapters
 
-Durable Threads treats each provider as a separate session system. The helper
-builds provider-specific argument arrays. It does not build shell strings.
+The optional Python helper can render and dispatch bounded calls to several coding-agent CLIs. Each provider remains its own session system; Durable Threads does not pretend their lifecycle semantics are identical.
+
+Adapters build argument arrays rather than shell strings. They do not check credentials or silently weaken provider permission controls.
 
 ## Capability matrix
 
-| Provider | Local entry point | Durable session control | Structured output | Effort control |
+| Provider | Local entry point | Session reuse | Structured output | Effort control |
 | --- | --- | --- | --- | --- |
-| Codex | Codex app actions | Native task ID and title | App result | Native runtime |
-| Claude | `claude` | `--resume` or `--continue` | `--output-format json` | `--effort` |
-| Grok | `grok` | `--session-id`, `--resume`, or `--continue` | `--output-format json` | `--effort` |
-| Cursor | `agent` or `cursor-agent` | `--resume` or `resume` | `--output-format json` | Account and model specific |
+| Codex | native Codex task actions | native task/session identity | native result | native runtime |
+| Claude Code | `claude` | `--resume` / `--continue` | `--output-format json` | `--effort` |
+| Grok Build | `grok` | `--resume` / session IDs | `--output-format json` | `--effort` |
+| Cursor Agent | `agent` (legacy `cursor-agent`) | `--resume` | `--output-format json` | adapter does not set it |
 
-The provider adapters do not check credentials. Run the provider's own login
-command or set the provider's environment variable before dispatch.
+Provider installation and authentication are out of scope. Configure the provider with its own login/environment mechanism before dispatch.
 
 ## Claude Code
 
-Claude Code supports headless print mode. It supports JSON output. It supports
-session resume by ID or name. Its current CLI also supports effort values.
+The adapter uses Claude Code's non-interactive print mode (`-p`), JSON output, model selection, effort selection, and session resume.
 
-Use stable aliases when the role is abstract:
+Stable Durable Threads role mappings are:
 
 | Durable Threads role | Claude selector |
 | --- | --- |
@@ -28,8 +27,7 @@ Use stable aliases when the role is abstract:
 | `balanced` | `sonnet` |
 | `efficient` | `haiku` |
 
-Use a full Claude model ID only when the current Anthropic catalog confirms it.
-Anthropic retires model IDs. Do not commit retired IDs to a roster.
+Use a full Claude model ID only when the current Anthropic catalog confirms it. Stable aliases reduce churn as concrete IDs are retired.
 
 Example:
 
@@ -41,24 +39,18 @@ durable-threads provider-command \
   --prompt "Run the focused tests and report changed paths and exact results."
 ```
 
-Resume an existing session by adding `--session-id`. The adapter emits
-`claude -p`, `--output-format json`, `--model`, `--effort`, and `--resume`.
-It does not emit `--dangerously-skip-permissions`.
+When a provider session ID is supplied, the adapter emits `--resume`. It does **not** emit `--dangerously-skip-permissions`.
 
 Official references:
 
-- [Claude Code CLI reference](https://code.claude.com/docs/en/cli-usage)
-- [Claude model deprecations](https://docs.anthropic.com/en/docs/about-claude/model-deprecations)
+- https://code.claude.com/docs/en/cli-usage
+- https://code.claude.com/docs/en/headless
 
 ## Grok Build
 
-Grok Build supports headless prompts. It supports named sessions. It supports
-JSON and streaming JSON output. It supports model and effort selection.
+The adapter uses Grok Build's headless prompt mode, JSON output, model/effort selection, and resumable sessions. It adds `--no-auto-update` for automation.
 
-Use `default` when the local Grok configuration owns model selection. Use a
-model name from `grok inspect` when the roster needs an explicit model. The
-adapter rejects generic role names such as `frontier` because it cannot map
-them without guessing.
+Use `default` when local Grok configuration should own model selection. For an explicit model, use a name the local Grok installation exposes. The adapter intentionally rejects generic `frontier`/`balanced`/`efficient` selectors because mapping them without a live catalog would be guesswork.
 
 Example:
 
@@ -70,32 +62,20 @@ durable-threads provider-command \
   --prompt "Review the current diff for one concrete regression."
 ```
 
-The adapter adds `--no-auto-update` for automation. It uses `--resume` when a
-provider session ID exists. It does not add `--always-approve`.
-
-Grok Build also exposes ACP through `grok agent stdio`. The current adapter
-uses the documented headless CLI because it is portable across scripts and
-does not require a JSON-RPC permission loop. An ACP adapter can be added when a
-host needs live session updates and interactive permission decisions.
+Grok Build also exposes ACP via `grok agent stdio`. The current helper uses the documented headless CLI because it is simpler for bounded scripted work; an ACP integration would make sense for hosts that need live session events and permission decisions.
 
 Official references:
 
-- [Grok Build overview](https://docs.x.ai/build/overview)
-- [Headless and scripting](https://docs.x.ai/build/cli/headless-scripting)
-- [CLI reference](https://docs.x.ai/build/cli/reference)
-- [Grok Build settings](https://docs.x.ai/build/settings)
-- [Grok 4.6 model guide](https://docs.x.ai/developers/grok-4-6)
+- https://docs.x.ai/build/overview
+- https://docs.x.ai/build/cli/headless-scripting
+- https://docs.x.ai/build/cli/reference
+- https://docs.x.ai/build/settings
 
 ## Cursor Agent
 
-Cursor Agent supports print mode, JSON output, model selection, and session
-resume. Current installations use `agent`. Older installations use
-`cursor-agent`. The adapter checks both names. Use `--binary cursor-agent` when
-the local installation needs the older name.
+Current Cursor CLI installations use `agent`; older environments may still expose `cursor-agent`. The adapter checks both and allows an explicit `--binary` override.
 
-Use `default` when Cursor should select the account default. Use an account
-visible model ID for an explicit choice. Do not map `frontier`, `balanced`, or
-`efficient` to a guessed Cursor model.
+Use `default` when Cursor should select the account default. For explicit routing, pass an account-visible model ID. The adapter does not guess mappings for `frontier`, `balanced`, or `efficient`, and it does not set Cursor effort because that capability is account/model-specific rather than represented safely by the current adapter.
 
 Example:
 
@@ -106,26 +86,17 @@ durable-threads provider-command \
   --prompt "Review the current diff and report only actionable findings."
 ```
 
-The Cursor model catalog is account-specific. The Cursor SDK documents model
-parameters and the `auto-smart` router. The CLI adapter does not invent those
-parameters. Use the Cursor CLI or SDK to discover a valid model before adding
-it to a roster.
-
-Cursor also supports ACP. ACP uses JSON-RPC over standard input and output. It
-has `session/new`, `session/load`, `session/prompt`, update events, and
-permission requests. Use ACP when a host needs those events. Use the CLI
-adapter for a simple headless worker.
+Cursor also exposes ACP through `agent acp`. ACP is the better integration point when a host needs live events, session methods, or interactive permission handling; the current adapter intentionally stays with the simpler headless CLI contract.
 
 Official references:
 
-- [Cursor CLI overview](https://cursor.com/docs/cli/overview)
-- [Cursor CLI parameters](https://cursor.com/docs/cli/reference/parameters)
-- [Cursor ACP](https://cursor.com/docs/cli/acp)
-- [Cursor Python SDK](https://prod.cursor.com/docs/sdk/python)
+- https://cursor.com/docs/cli/overview
+- https://cursor.com/docs/cli/reference/parameters
+- https://cursor.com/docs/cli/acp
 
-## Provider commands
+## Rendering and dispatch
 
-Render a command without running it:
+Render a provider command without running it:
 
 ```bash
 durable-threads provider-command \
@@ -135,7 +106,7 @@ durable-threads provider-command \
   --prompt "Complete the bounded task."
 ```
 
-Run one provider call only after the user authorizes it:
+Run one provider call only when that external execution is authorized:
 
 ```bash
 durable-threads dispatch \
@@ -146,22 +117,10 @@ durable-threads dispatch \
   --prompt "Complete the bounded task."
 ```
 
-The dispatch command uses an argument array. It does not use a shell. It
-captures bounded output. It returns a session ID when the provider emits one.
-It extracts common token counters when the provider emits them. With
-`--ledger` and `--task-id`, it records start and finish state without writing a
-transcript. It blocks a second local writer and rejects a provider or session
-ID change during a follow-up.
+`dispatch` uses an argument array, captures bounded output, extracts a session ID and common usage counters when the provider emits them, and can record redacted start/finish state in the ledger. With a ledger/task ID, it also guards against a second local writer and provider/session identity drift during a follow-up.
 
-Codex is the deliberate exception. The helper returns a native-app action
-description for Codex. Use the Codex task actions for list, send, wait, read,
-and provider-side writer checks. The Python CLI does not launch a Codex task.
+Codex is the deliberate exception: the helper returns a native-app action description rather than launching a Codex task. Use native Codex task actions for list/send/wait/read and provider-side writer checks.
 
-## Session ID handling
+## Session IDs
 
-The roster `threadId` field stores the provider session ID. It is local state.
-Do not commit it. After a first run, record the returned ID in the local roster
-or ledger. Use the same provider and working directory when resuming.
-
-Do not resume an active writer. Inspect the provider status first. Stop on an
-authorization failure, quota failure, or ambiguous session state.
+The roster `threadId` field is local provider state. Do not commit it. Resume with the same provider and working directory, and do not resume an active writer blindly. Stop on authentication failures, quota failures, or ambiguous session state until the real provider state is understood.

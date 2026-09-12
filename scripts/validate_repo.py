@@ -1,15 +1,70 @@
-"""Validate repository packaging and zero-config distribution files."""
+"""Validate repository packaging and public documentation."""
 
 from __future__ import annotations
 
 import json
 import re
 from pathlib import Path
+from urllib.parse import unquote
 
 
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise RuntimeError(message)
+
+
+def _outside_fenced_code(text: str) -> str:
+    """Return Markdown with fenced-code bodies removed but line structure preserved."""
+
+    output: list[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            output.append("")
+            continue
+        output.append("" if in_fence else line)
+    require(not in_fence, "unclosed Markdown code fence")
+    return "\n".join(output)
+
+
+def _validate_markdown(root: Path) -> None:
+    link_re = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+
+    for path in sorted(root.rglob("*.md")):
+        if any(part in {".git", ".venv", "dist"} for part in path.parts):
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        visible = _outside_fenced_code(text)
+        rel = path.relative_to(root)
+
+        require("[TODO" not in visible, f"unfinished TODO placeholder in {rel}")
+        require(
+            not re.search(r"(?m)^\s*\$\$\s*$", visible),
+            f"unsupported block-math delimiter in {rel}; use GitHub-safe prose or a code/math surface",
+        )
+
+        for raw_target in link_re.findall(visible):
+            target = raw_target.strip()
+            if target.startswith("<") and target.endswith(">"):
+                target = target[1:-1].strip()
+            if not target or target.startswith(("#", "http://", "https://", "mailto:")):
+                continue
+
+            target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+            if not target:
+                continue
+            destination = (
+                (root / target.lstrip("/")).resolve()
+                if target.startswith("/")
+                else (path.parent / target).resolve()
+            )
+            try:
+                destination.relative_to(root.resolve())
+            except ValueError as exc:
+                raise RuntimeError(f"Markdown link escapes repository in {rel}: {raw_target}") from exc
+            require(destination.exists(), f"broken local Markdown link in {rel}: {raw_target}")
 
 
 def main() -> int:
@@ -65,7 +120,9 @@ def main() -> int:
     for path in plugin_root.rglob("*.schema.json"):
         json.loads(path.read_text(encoding="utf-8"))
 
-    print("repository files are valid")
+    _validate_markdown(root)
+
+    print("repository files and Markdown documentation are valid")
     return 0
 
 

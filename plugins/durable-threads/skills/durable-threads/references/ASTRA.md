@@ -1,51 +1,45 @@
 # Astra operating guide
 
-Astra is a scarce frontier resource in the Durable Threads economy profile. Use it where additional reasoning changes an important decision, not as the default long-running executor.
+Astra is a scarce frontier resource in the Durable Threads economy profile. Use it where additional reasoning can change an important decision—not as the default long-running executor.
 
-This guide describes role policy. It does not promise that any account or runtime has Astra.
+This is role policy. It does not imply that every account/runtime has Astra or that Astra is always the right frontier choice.
 
 ## Availability
 
-Check the live Codex catalog and current account allowance before selection. Use the exact model ID returned by the runtime. If Astra is absent, report that fact and use the declared fallback. Never guess a versioned slug.
+Check the live Codex catalog and current account allowance before selection. Use a model ID or tier the runtime actually exposes. If the preferred frontier model is unavailable, report that fact and use the declared fallback rather than guessing a versioned slug.
 
-## Preferred Astra roles
+## Where frontier reasoning earns its cost
 
-Use Astra for complex architecture planning, decomposition where incorrect parallelism would cause rework, resolving contradictory requirements, reviewing R3/R4 security/privacy/migration/production changes, deciding whether repeated worker failure means the implementation or plan is wrong, and final integration review when blast radius is broad.
+Good Astra use cases include architecture and decomposition, contradictory requirements, R3/R4 security/privacy/migration/production decisions, diagnosing repeated conceptual worker failure, and broad final integration review.
 
-Do not use Astra merely to wait for workers, poll status, apply routine code changes, rerun known checks, format code, or review every small edit.
+Poor Astra use cases include waiting for workers, polling status, routine code edits, rerunning known checks, formatting, or reviewing every small diff simply because Astra is available.
 
 ## Reasoning effort
 
-Economy profile:
+A practical economy profile is:
 
-- `low`: default frontier planner or narrow frontier review;
-- `medium`: difficult architecture or R3/R4 review;
-- `high`: exceptional tasks with demonstrated value;
-- `xhigh`/`max`: benchmarked or pathological cases only.
+| Effort | Use |
+| --- | --- |
+| `low` | default frontier planner or narrow consequential review |
+| `medium` | difficult architecture or R3/R4 review |
+| `high` | exceptional task with evidence that more exploration is useful |
+| `xhigh` / `max` | benchmarked or pathological cases, not the default |
 
-Higher effort is not automatically better. It can increase latency, exploration, and allowance consumption.
+Higher effort can increase latency and allowance consumption. More reasoning is useful when the problem needs it, not as a universal quality switch.
 
-## Astra + workhorse pattern
+## Frontier + workhorse pattern
 
-```text
-Astra Low/Medium
-  architecture + acceptance
-        ↓
-freeze decisions
-        ↓
-efficient XHigh workhorse
-  implementation + local checks
-        ↓
-deterministic verification
-        ↓
-risk gate
-        ↓
-Astra only when review threshold is met
+```mermaid
+flowchart LR
+    A1["Frontier<br/>plan + acceptance"] --> C["Freeze contract"] --> W["Efficient XHigh<br/>implementation"] --> V["Deterministic checks"] --> G{"Review gate"}
+    G -->|"Below threshold"| I["Integrate"]
+    G -->|"Consequential"| A2["Frontier / specialist<br/>review"]
+    A2 --> I
 ```
 
 ## Sleeping orchestrator
 
-An Astra parent must not burn turns monitoring workers. Dispatch, then use event-driven/bounded waiting without repeated parent resampling. Wake Astra only when material evidence requires a decision.
+A frontier parent should not burn turns monitoring healthy execution. Dispatch, wait through the provider's bounded/event-driven mechanism where available, and wake the frontier model only when material evidence requires another decision.
 
 Related Codex reports:
 
@@ -54,12 +48,11 @@ Related Codex reports:
 
 ## Context
 
-Do not transfer full old transcripts into a new Astra call. Provide the current objective, frozen decisions, invariants, relevant paths, acceptance evidence, and the one unresolved decision Astra must make.
+Do not transfer an old transcript just because a larger context window can hold it. Give the frontier reviewer the current objective, frozen decisions, invariants, relevant paths, acceptance evidence, and the unresolved decision it needs to make.
 
 ## Current OpenAI references
 
 - https://help.openai.com/en/articles/20001516
 - https://developers.openai.com/api/docs/models
-- https://developers.openai.com/api/docs/guides/latest-model
 
-See `MODEL_ECONOMICS.md` for the broader provider-neutral policy.
+See `MODEL_ECONOMICS.md` for the provider-neutral policy.

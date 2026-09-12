@@ -5,62 +5,63 @@
 
 **Frontier decisions. Workhorse execution. Deterministic verification. Evidence-gated escalation.**
 
-Durable Threads is one Codex plugin with one canonical bundled skill. Install it, start a new session, and use it. No roster, Python package, extra provider, or model configuration is required for normal use.
+Durable Threads is a Codex plugin for delegating engineering work without keeping your most expensive model in every part of the loop. It ships one canonical `durable-threads` skill and works with sensible defaults: no roster, Python package, extra provider, or model configuration is required to get started.
 
-The plugin is the **distribution unit**. The bundled `durable-threads` skill is the **workflow implementation**. They are not two separate products.
+The **plugin is the installable package**. The bundled **skill is the workflow**. You do not install or maintain them separately.
 
 ## Quick start
 
-### Codex CLI
-
-Add this repository as a plugin marketplace and install Durable Threads:
+Add the repository marketplace and install the plugin:
 
 ```bash
 codex plugin marketplace add Strataward/durable-threads --ref main
 codex plugin add durable-threads@strataward
 ```
 
-Start a new Codex session so the bundled skill is loaded. Then ask naturally:
+Start a new Codex session, then ask naturally:
 
 ```text
 Use Durable Threads to implement this feature efficiently and verify the result.
 ```
 
-You can also open `/plugins`, choose **Add Marketplace**, enter `Strataward/durable-threads`, and install **Durable Threads** from the `Strataward` marketplace.
+You can also use `/plugins`, choose **Add Marketplace**, enter `Strataward/durable-threads`, and install **Durable Threads** from the `Strataward` marketplace.
 
 That is the complete basic setup.
 
-> Using the Codex IDE extension? Plugins are not currently supported there. See [IDE / standalone skill fallback](docs/INSTALLATION.md#ide--standalone-skill-fallback).
+> Using the Codex IDE extension? Plugins are not currently supported there. Use the [standalone skill fallback](docs/INSTALLATION.md#ide--standalone-skill-fallback).
 
-## What it does by default
+## What it does
 
-Durable Threads applies one compact workflow without asking you to configure workers first:
+The default workflow separates decision-making from sustained execution:
 
 ```mermaid
-flowchart TB
-    U["Objective"] --> P
+flowchart LR
+    U["Objective"] --> DP
 
     subgraph DP["Decision plane"]
         direction TB
         P["Plan"] --> C["Freeze contract"]
     end
 
-    C --> W
+    C --> EP
 
     subgraph EP["Execution plane"]
         direction TB
         W["Implement"] --> V["Verify"]
+        V --> Q{"Pass?"}
+        Q -->|"No"| F["Focused correction"]
+        F --> V
     end
 
-    V --> G{"Risk or ambiguity?"}
-    G -->|"Ordinary"| I["Integrate"]
-    G -->|"Critical / ambiguous"| R["Stronger review"]
+    Q -->|"Yes"| G{"Risk / ambiguity?"}
+    G -->|"Low"| I["Integrate"]
+    G -->|"High"| R["Stronger review"]
     R --> I
 ```
 
-The planner should sleep while healthy workers execute instead of repeatedly spending expensive parent turns polling status.
+The planner should sleep while a healthy worker executes. It wakes when there is a result, a failure, new evidence, or a real decision to make—not just to poll status.
 
-The default economic policy is role-based rather than model-name-based:
+The default policy is role-based rather than tied to temporary model IDs:
 
 | Job | Starting policy |
 | --- | --- |
@@ -69,26 +70,22 @@ The default economic policy is role-based rather than model-name-based:
 | consequential architecture / review | frontier model + low or medium reasoning |
 | R3/R4 security or systemic work | independent specialist/frontier review |
 
-When the current OpenAI catalog exposes Luna/Astra-style tiers, this naturally supports Luna XHigh-like workhorse execution and Astra Low/Medium-like decision work. Durable Threads discovers live model availability instead of assuming model IDs will stay fixed.
+With OpenAI's current model family, that can map naturally to Luna XHigh-like workhorse execution and Astra Low/Medium-like decision work. Durable Threads resolves against live model availability where possible rather than assuming today's model names will remain permanent.
 
-## One product, progressive customization
+## Progressive customization
 
-Most users should stop at the quick start.
+Most users should stop at the quick start. Add configuration only when it solves a concrete problem:
 
-When you need more control, customize in layers:
+1. **Per task:** state a risk level, model/effort preference, or review requirement in the prompt.
+2. **Per repository:** put stable policy in your project's `AGENTS.md`.
+3. **Deterministic orchestration:** use the optional Python helper and roster for reproducible routing, benchmarks, or explicit persistent workers.
+4. **Multi-provider:** configure Claude Code, Grok Build, or Cursor only when you actually want those external workers.
 
-1. **Per task:** tell Durable Threads what model/effort, risk level, or review policy you want.
-2. **Per repository:** put stable preferences in your project's `AGENTS.md`.
-3. **Deterministic orchestration:** use the optional Python helper and a roster when you need reproducible routing, benchmarking, or explicit persistent workers.
-4. **Multi-provider:** configure Claude Code, Grok Build, or Cursor only if you actually want those external workers.
-
-See [Customization](docs/CUSTOMIZATION.md). The optional helper is not required by the plugin.
+See [Customization](docs/CUSTOMIZATION.md).
 
 ## Why the plugin contains a skill
 
-OpenAI's current Codex guidance separates authoring from distribution: a **skill** is the reusable workflow format; a **plugin** can bundle that skill so other users can install it. Durable Threads follows that model exactly.
-
-Canonical layout:
+OpenAI's current model is straightforward: **skills author reusable workflows; plugins distribute them**. Durable Threads follows that layout with one source of truth:
 
 ```text
 .agents/plugins/marketplace.json
@@ -102,11 +99,11 @@ plugins/
         references/
 ```
 
-There is only one copy of the workflow source.
+There is no duplicate top-level skill to keep in sync.
 
 ## Risk model
 
-Risk measures consequence, not how annoying the task is:
+Risk measures consequence, not how difficult the code feels:
 
 | Class | Meaning | Typical examples |
 | --- | --- | --- |
@@ -116,11 +113,11 @@ Risk measures consequence, not how annoying the task is:
 | R3 | critical | auth, payments, privacy, destructive migration, concurrency |
 | R4 | systemic | distributed architecture, control plane, recovery design |
 
-R0/R1 usually need deterministic checks, not an expensive independent review. R3/R4 justify stronger review by default.
+R0/R1 usually need good deterministic checks, not an expensive independent review. R3/R4 justify stronger independent review by default.
 
 ## Implementation contracts
 
-Workers get the information required to execute rather than a full planner transcript:
+Workers receive the information needed to execute, not the planner's entire transcript:
 
 ```text
 OBJECTIVE
@@ -147,13 +144,13 @@ ACCEPTANCE
 - Focused tests and typecheck pass.
 ```
 
-This is what makes a cheaper high-reasoning worker effective: architecture is decided once, execution is bounded, and correctness is checked independently.
+A bounded contract is what makes an efficient high-reasoning worker useful: important decisions are made once, the write scope is explicit, and correctness is checked independently.
 
 ## Optional advanced helper
 
-The repository also contains a Python helper for teams and experiments that need deterministic routing, provider session IDs, structured evidence, CLI dispatch, or benchmark records.
+The repository also includes a Python helper for teams and experiments that need deterministic routing, provider session IDs, structured evidence, CLI dispatch, or benchmark records. It is deliberately optional.
 
-It is deliberately **advanced/optional**. If you do not know why you need a roster, you do not need one.
+If you do not know why you need a roster, you do not need one.
 
 Development install:
 
@@ -161,11 +158,9 @@ Development install:
 python3 -m pip install -e '.[dev]'
 ```
 
-Reference configurations live in `examples/`. Multi-provider adapters do not become active merely by installing the plugin; the relevant provider CLIs and sessions must be configured separately.
+Reference configurations live in `examples/`. Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent; those adapters are opt-in.
 
 ## Documentation
-
-Start here:
 
 - [Installation and supported surfaces](docs/INSTALLATION.md)
 - [Customization: simple → advanced](docs/CUSTOMIZATION.md)
@@ -173,7 +168,7 @@ Start here:
 - [Architecture](plugins/durable-threads/skills/durable-threads/references/ARCHITECTURE.md)
 - [Model economics](plugins/durable-threads/skills/durable-threads/references/MODEL_ECONOMICS.md)
 - [Risk-aware routing](plugins/durable-threads/skills/durable-threads/references/RISK_ROUTING.md)
-- [Packet contract](plugins/durable-threads/skills/durable-threads/references/PACKET_CONTRACT.md)
+- [Implementation packet contract](plugins/durable-threads/skills/durable-threads/references/PACKET_CONTRACT.md)
 - [Operating policy](plugins/durable-threads/skills/durable-threads/references/OPERATING_POLICY.md)
 - [Persistent threads](plugins/durable-threads/skills/durable-threads/references/PERSISTENT_THREADS.md)
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
@@ -194,7 +189,7 @@ ruff check .
 python scripts/validate_repo.py
 ```
 
-Durable Threads is alpha software. Codex plugin/skill surfaces and model catalogs can change quickly, so installation and compatibility documentation is dated and tied to current OpenAI sources rather than treated as permanent behavior.
+Durable Threads is alpha software. Codex plugin/skill surfaces and model catalogs can change quickly, so compatibility documentation is dated and checked against current upstream sources.
 
 ## License
 

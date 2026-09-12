@@ -7,6 +7,17 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrite the model-economics article for a more natural engineering audience and replace fragile block math with GitHub-safe prose.
+- Standardize primary diagrams on a hybrid layout: left-to-right system flow with top-to-bottom detail inside major planes.
+- Rework reader-facing guidance so setup, customization, delegation, provider behavior, and model policy are easier to scan without losing technical precision.
+- Refresh installation and OpenAI compatibility references against the current plugin/skill and Codex CLI sources.
+
+### Added
+
+- Markdown documentation validation for unclosed code fences, unsupported `$$` block-math delimiters, unfinished placeholders, and broken local links.
+
 ### Planned
 
 - Expand matched model/effort benchmarks before making empirical routing automatic.

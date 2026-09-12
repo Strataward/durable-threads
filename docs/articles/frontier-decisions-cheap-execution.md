@@ -1,22 +1,22 @@
 # Stop Using Your Best Model as a Worker
 
-**Frontier decisions, cheap execution, and the architecture behind Durable Threads**
+**A practical way to spend frontier reasoning on decisions and cheaper reasoning on execution**
 
 *Waleed Dogar — September 12, 2026*
 
-The obvious way to use a frontier coding model is also one of the least efficient: give the best model the repository, ask it to build the feature, and let it stay in the loop until the work is done.
+When I started using frontier coding models heavily, I defaulted to a simple rule: use the strongest model for the whole task. It felt safe. The planner was the implementer, the debugger, the reviewer, and often the process sitting around waiting for something else to finish.
 
-That works. It can also waste the scarcest part of a subscription allowance on activities that do not require frontier intelligence: reading files, waiting for workers, rerunning tests, formatting code, applying a known design, and making routine corrections.
+That works, but once you use these tools all day, the economics start to matter. A large part of software work is important without being frontier-model work. Reading another file, applying an architecture that is already decided, fixing a test failure, running checks, or waiting for a worker does not always benefit from spending the scarcest model allowance available.
 
-A better architecture is to separate **decision work** from **execution work**.
+The workflow I have converged on is different:
 
-> Expensive intelligence should make infrequent, high-leverage decisions. Efficient intelligence should own long-running execution.
+> **Use frontier intelligence to make consequential decisions. Give a capable workhorse a bounded contract to execute. Bring frontier intelligence back only when the evidence or risk warrants it.**
 
-That principle is the basis of the current Durable Threads design.
+That is the idea behind Durable Threads.
 
 ```mermaid
-flowchart TB
-    U["User objective"] --> P
+flowchart LR
+    U["User objective"] --> DP
 
     subgraph DP["Decision plane"]
         direction TB
@@ -25,204 +25,194 @@ flowchart TB
         I --> A["Set acceptance"]
     end
 
-    A --> H["Implementation contract"]
-    H --> W
+    A --> C["Implementation contract"]
+    C --> EP
 
     subgraph EP["Execution plane"]
         direction TB
-        W["Implement"] --> T["Verify"]
-        T --> F{"Checks pass?"}
-        F -->|"No"| C["Focused correction"]
-        C --> T
+        W["Implement"] --> T["Run checks"]
+        T --> Q{"Pass?"}
+        Q -->|"No"| F["Focused correction"]
+        F --> T
     end
 
-    F -->|"Yes"| R{"Frontier review?"}
-    R -->|"No"| X["Integrate"]
-    R -->|"Yes"| V["Independent review"]
+    Q -->|"Yes"| R{"Risk / ambiguity?"}
+    R -->|"Low"| X["Integrate"]
+    R -->|"High"| V["Independent review"]
     V --> X
 ```
 
-The contract is the boundary: make consequential decisions once, then let a workhorse own sustained execution.
+The important boundary is the **implementation contract**. Architecture lives on the left. Sustained execution lives in the middle. Expensive review is reintroduced on the right only when it earns its keep.
 
-## The surprising part: Luna XHigh is a serious implementation model
+## Luna XHigh changed my default for implementation
 
-OpenAI describes GPT-5.6 Luna as the cost-sensitive, high-volume member of the GPT-5.6 family. It supports reasoning levels through `xhigh` and `max`, exposes a 1.05M-token context window, and supports up to 128K output tokens. On the API, its published token price is dramatically below the larger models. [OpenAI: GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+In my own Codex use, GPT-5.6 Luna at XHigh reasoning has been much more capable as an implementation worker than the word *efficient* might suggest. I would not ask it to make every architectural decision blindly, but once the task is well specified, it can implement, debug, run focused checks, and correct itself extremely effectively.
 
-For ChatGPT Plus users working in Codex or Work, the more important number is the included allowance. OpenAI's September 2026 guidance estimates roughly 250–2,000 local Luna messages per five-hour period on Plus, compared with 5–45 for GPT-6 Astra, 10–100 for Sol, and 25–200 for Terra. OpenAI notes these are estimates rather than fixed caps and that task size, context, settings, reasoning effort, and weekly limits matter. [OpenAI: Managing usage with GPT-6 Astra in Work and Codex](https://help.openai.com/en/articles/20001516)
+That matters because the included allowance is very different across models. OpenAI currently estimates the following local-message ranges per five-hour period for ChatGPT Plus users in Work and Codex:
 
-That changes the optimization problem.
+| Model | Estimated local messages / 5 hours |
+| --- | ---: |
+| GPT-6 Astra | 5–45 |
+| GPT-5.6 Sol | 10–100 |
+| GPT-5.6 Terra | 25–200 |
+| GPT-5.6 Luna | 250–2,000 |
 
-If Astra is somewhat more likely to solve a bounded implementation task on the first try, but Luna XHigh lets you run an implementation pass, deterministic checks, a review pass, and a correction pass for a fraction of the same subscription allowance, then **first-pass model quality is no longer the only variable that matters**.
+Those are **estimates, not fixed quotas**. OpenAI explicitly notes that context size, task complexity, reasoning effort, settings, and weekly limits can change consumption. Still, the order-of-magnitude difference changes how I think about a workflow. [OpenAI: Managing usage with GPT-6 Astra in Work and Codex](https://help.openai.com/en/articles/20001516)
 
-The objective becomes:
+Luna is also explicitly positioned by OpenAI as the cost-sensitive, high-volume member of the GPT-5.6 family. It supports reasoning through `xhigh` and `max`, with a 1.05M-token context window and up to 128K output tokens. [OpenAI: GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
 
-$$
-\text{Workflow utility}
-=
-\frac{\text{accepted correct work}}
-{\text{scarce allowance} + \text{latency} + \text{rework}}
-$$
+This is **not** an argument that Luna is a better model than Astra. Astra is the stronger frontier model. The point is that model quality is only one term in the system-level optimization problem.
 
-In practice, Luna XHigh is particularly compelling once the architecture has already been decided and the task has been converted into a bounded implementation contract.
+A useful mental model is:
 
-## The frontier model should be an interrupt handler, not the CPU
+> **Workflow value = accepted correct work ÷ (scarce allowance + latency + rework)**
 
-The frontier model is most valuable when the cost of a wrong decision is large: choosing architecture, defining boundaries, deciding safe parallelism, identifying invariants, resolving ambiguity, reviewing high-risk changes, or deciding whether repeated worker failure means implementation error or a bad plan.
+That is not a formal benchmark metric. It is simply the question I care about when I have real work to ship and a finite allowance to ship it with.
 
-Those are high-decision-density activities.
+If Luna XHigh can take a frozen design through implementation, tests, review, and one correction while Astra is reserved for the decisions where it materially changes the outcome, I can get more high-quality engineering work out of the same subscription.
 
-The frontier model is much less valuable when it is polling another agent, waiting for tests, reopening known files, applying boilerplate, renaming symbols, formatting output, or repeatedly checking whether a worker has finished.
+## Freeze the decisions before you hand off the code
 
-## Why active orchestration can burn quota
+The biggest mistake in this pattern is giving the cheaper model a vague prompt and expecting it to rediscover the whole architecture.
 
-Recent Codex issue reports document a failure mode where short `wait_agent` timeouts repeatedly return control to the parent model. Each timeout can cause another parent inference over a large accumulated context even though no new worker result exists.
+“Implement refresh-token rotation” leaves a lot of product and security decisions unresolved. A better handoff says, in effect:
 
-OpenAI Codex issue [#35108](https://github.com/openai/codex/issues/35108) describes nested `wait_agent` polling causing repeated parent turns and token usage. Issue [#41875](https://github.com/openai/codex/issues/41875) proposes aligning wait behavior with prompt-cache TTLs because short polling intervals can create many no-op parent turns during long worker tasks.
+- Redis remains the state store.
+- Replay invalidates the token family.
+- Existing access-token behavior must not change.
+- Refresh tokens must not be persisted in plaintext.
+- Only `src/auth/**` and `tests/auth/**` are in scope.
+- These exact tests and type checks define acceptance.
 
-A detailed community telemetry post reported 47 no-op checks in one Astra-parent/Luna-worker run and attributed 7.13M parent input tokens to those checks. That is one user's measurement, not an OpenAI benchmark, but it is directionally consistent with the Codex issues. [Reddit: investigation into Astra quota consumption](https://www.reddit.com/r/codex/comments/1wa9c9d/i_investigated_why_gpt6_astra_burns_quota_so_fast/)
+Now the workhorse is solving an implementation problem rather than simultaneously acting as product manager, architect, security reviewer, and programmer.
 
-The architectural response is simple: **use a sleeping orchestrator**.
+Durable Threads calls that a **bounded implementation contract**. The term is less important than the discipline: decisions, invariants, non-goals, allowed paths, and acceptance checks travel with the work.
+
+## Treat the frontier model like an interrupt handler, not the CPU
+
+Frontier reasoning has very high value when the cost of a wrong decision is high: architecture, ambiguous requirements, unsafe decomposition, auth boundaries, destructive migrations, concurrency, broad integration review, or repeated failures that suggest the plan itself may be wrong.
+
+It has much less value when it is simply watching healthy execution.
+
+This distinction becomes especially important with multi-agent workflows. Codex issue reports have documented cases where short `wait_agent` timeouts repeatedly return control to a parent model. If the parent is carrying a large context, every no-op wake-up can be expensive even though nothing changed. See [openai/codex#35108](https://github.com/openai/codex/issues/35108) and [openai/codex#41875](https://github.com/openai/codex/issues/41875).
+
+A community investigation reported 47 no-op checks and millions of parent input tokens in one Astra-parent/Luna-worker run. That is one user's telemetry—not an OpenAI benchmark or a universal quota model—but it illustrates the failure mode well. [Community telemetry](https://www.reddit.com/r/codex/comments/1wa9c9d/i_investigated_why_gpt6_astra_burns_quota_so_fast/)
+
+The response is a **sleeping orchestrator**:
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant P as Frontier planner
+    participant P as Planner
     participant W as Workhorse
     participant V as Verification
 
     U->>P: Objective
     P->>P: Make consequential decisions
     P->>W: Dispatch bounded contract
-    Note over P: Sleep — no status polling
+    Note over P: Sleep — do not poll for reassurance
     W->>W: Implement and debug
     W->>V: Run required checks
     V-->>W: Evidence
     W-->>P: Result + compact evidence
-    Note over P: Wake only for another decision
+    Note over P: Wake because a decision is needed
     P-->>U: Integrated result
 ```
 
-The frontier model should not remain awake merely to supervise healthy execution.
+The planner should wake because there is new information to reason about, not because another 30-second timer expired.
 
-## Freeze decisions before implementation
+## Risk should buy review, not automatically buy an expensive implementer
 
-Efficient models become far more reliable when they are not asked to rediscover architecture while coding.
-
-Compare `Implement refresh-token rotation` with a contract that states the chosen state store, replay semantics, invariants, allowed paths, acceptance checks, and non-goals. The second prompt converts a fuzzy engineering problem into constrained execution. The worker still needs substantial reasoning, which is why Luna XHigh is useful, but it no longer has to act as product manager, architect, security reviewer, and implementor simultaneously.
-
-Durable Threads calls this an **implementation contract**.
-
-## Risk should determine where frontier intelligence is spent
+Difficulty and consequence are not the same thing. A tricky algorithm behind a stable internal interface can be cognitively difficult but fairly contained. A one-line authorization change can be simple to type and still deserve independent frontier review.
 
 Durable Threads uses five consequence classes:
 
-| Risk | Meaning | Typical examples |
-| --- | --- | --- |
-| R0 | Mechanical | docs, formatting, typo, narrow rename |
-| R1 | Bounded | isolated feature or bug fix |
-| R2 | Integration | API contract, multiple modules, queues, caches, dependency changes |
-| R3 | Critical | auth, payments, privacy, destructive migration, concurrency, production boundary |
-| R4 | Systemic | architecture, distributed state, control plane, cross-service recovery |
-
-A useful Plus-oriented default is efficient execution across all classes, with stronger planning/review as risk increases. R3/R4 are where frontier review earns its cost.
+| Risk | What it means | Typical examples | Default review posture |
+| --- | --- | --- | --- |
+| R0 | Mechanical | docs, formatting, narrow rename | machine checks |
+| R1 | Bounded | isolated feature or bug fix | efficient review when useful |
+| R2 | Integration | API contract, queue/cache, multi-module change | integration-focused review |
+| R3 | Critical | auth, payments, privacy, destructive migration, concurrency | frontier/specialist review |
+| R4 | Systemic | distributed state, control plane, recovery architecture | frontier architecture + final review |
 
 ```mermaid
-flowchart TB
-    R0["R0 · Mechanical<br/>machine checks"] --> R1["R1 · Bounded<br/>efficient workhorse"]
-    R1 --> R2["R2 · Integration<br/>integration review"]
-    R2 --> R3["R3 · Critical<br/>frontier / specialist review"]
-    R3 --> R4["R4 · Systemic<br/>frontier architecture + review"]
+flowchart LR
+    R0["R0<br/>Mechanical"] --> R1["R1<br/>Bounded"] --> R2["R2<br/>Integration"] --> R3["R3<br/>Critical"] --> R4["R4<br/>Systemic"]
 ```
 
-The exact model names will change. The architecture should not. That is why Durable Threads stores provider-neutral roles such as `efficient`, `balanced`, and `frontier` and resolves them against live model catalogs when possible.
+The implementation worker can still be efficient at R3 or R4 if the contract is well bounded. The higher risk changes **who decides and who independently reviews**, not necessarily who types every line.
 
-## Escalate on evidence, not prestige
+## Verify with machines before paying another model to feel confident
 
-The economic escalation ladder should stay short:
+Another easy way to waste model capacity is to ask a reviewer to reason about something the toolchain can answer directly.
+
+If a compiler, type checker, unit test, integration test, schema validator, static analyzer, migration check, or CI job can establish a property, run it first. A model review is most valuable after deterministic evidence has removed the obvious uncertainty.
+
+The correction loop should also stay specific. “Try again” is a weak retry. “`test_refresh_replay` failed because descendants remain valid; preserve the existing state-store decision and fix only the replay invalidation path” is a bounded correction.
+
+Escalation should work the same way. My default ladder is roughly:
+
+**Efficient XHigh → Balanced Medium → Frontier Low → Frontier Medium**
+
+I move up only when there is evidence: repeated acceptance failure, an unresolved architecture decision, a cross-module invariant that the packet missed, or a credible security finding. Frontier High/XHigh/Max is an exception, not a status symbol.
+
+## The Plus workflow I actually want
+
+For most substantial coding tasks, this is the shape I am aiming for:
 
 ```mermaid
-flowchart TB
-    L["Efficient · XHigh"] -->|"repeated acceptance failure"| S["Balanced · Medium"]
-    S -->|"architecture ambiguity"| A1["Frontier · Low"]
-    A1 -->|"hard unresolved decision"| A2["Frontier · Medium"]
-    A2 -->|"exception only"| AX["Frontier · High+"]
+flowchart LR
+    U["Feature / bug / refactor"] --> DP
+
+    subgraph DP["Decision plane"]
+        direction TB
+        P["Astra Low or Sol Medium"] --> D["Plan + freeze decisions"]
+        D --> C["Implementation contract"]
+    end
+
+    C --> EP
+
+    subgraph EP["Execution plane"]
+        direction TB
+        L["Luna XHigh implements"] --> T["Tests / types / lint / CI"]
+        T --> Q{"Pass?"}
+        Q -->|"No"| F["Focused Luna correction"]
+        F --> T
+        Q -->|"Yes"| W["Luna first-line review"]
+    end
+
+    W --> R{"High-risk or unresolved?"}
+    R -->|"No"| X["Integrate"]
+    R -->|"Yes"| A["Astra / specialist review"]
+    A --> C2{"Correction?"}
+    C2 -->|"No"| X
+    C2 -->|"Yes"| F2["Bounded Luna correction"]
+    F2 --> T
 ```
 
-Escalation is triggered by **failure evidence**: failed tests, repeated invariant violations, discovered shared state, or plausible security findings. "This task looks important" is not evidence that every token should be frontier-priced.
+I also keep Fast mode off when allowance longevity matters, avoid parallel writers unless the tasks are genuinely independent, and keep the frontier parent asleep while execution is healthy.
 
-## Deterministic verification beats model confidence
+The point is not to make every workflow maximally complicated. For a small edit, I would often stay in the current session and do the work directly. Durable Threads should earn the handoff overhead rather than create ceremony for its own sake.
 
-If correctness can be checked with a compiler, type checker, unit test, integration test, schema validator, static analyzer, migration check, or CI workflow, use that machinery before paying another model to reason about the same property.
+## What Durable Threads is trying to make repeatable
 
-```mermaid
-flowchart TB
-    W["Workhorse implements"] --> D["Deterministic checks"]
-    D --> P{"Pass?"}
-    P -->|"No"| C["Focused correction"]
-    C --> D
-    P -->|"Yes"| G{"Review gate"}
-    G -->|"R0–R1"| I["Integrate"]
-    G -->|"R2"| R["Integration review"]
-    G -->|"R3–R4"| F["Frontier / specialist review"]
-    R --> I
-    F --> I
-```
+Durable Threads began as a way to preserve named worker sessions and compact handoffs across coding providers. The model-economics layer grew out of a more practical question: **how do I keep frontier-quality decision making without paying frontier-model economics for every minute of execution?**
 
-## Persistent threads are an economic primitive
+The project now makes a few behaviors explicit: bounded contracts, consequence-based risk, sleeping orchestration, deterministic verification, durable worker identity, and evidence-gated escalation.
 
-Durable Threads maintains named worker identities and provider session IDs rather than replaying an entire planner transcript into each handoff. A persistent implementation worker can retain relevant local context while the planner sends only current facts. Research and security review can remain isolated from implementation reasoning.
+Some of those ideas are implementation policy, not settled science. The next step is measurement: matched tasks, same baselines, same acceptance checks, and enough repetitions to learn where Luna XHigh is genuinely the better workhorse and where the stronger model earns its cost earlier.
 
-Persistent sessions are useful when retained context is relevant. They are harmful when stale assumptions accumulate indefinitely. Worker identity is durable; stale context is not sacred.
+That distinction matters. I do not want Durable Threads to hard-code today's favorite model. I want it to encode a durable principle:
 
-## The workflow I use on Plus
+> **Spend the scarce intelligence where it changes the decision. Spend the abundant intelligence where the work simply needs to get done well.**
 
-```mermaid
-flowchart TB
-    U["Feature / bug / refactor"] --> P["Decision plane<br/>Astra Low or Sol Medium"]
-    P --> C["Implementation contract"]
-    C --> L["Execution plane<br/>Luna XHigh"]
-    L --> V["Deterministic checks"]
-    V --> Q{"Pass?"}
-    Q -->|"No"| F["Focused Luna correction"]
-    F --> V
-    Q -->|"Yes"| R{"Critical / ambiguous?"}
-    R -->|"No"| D["Integrate"]
-    R -->|"Yes"| A["Astra Low / Medium review"]
-    A --> X{"Correction required?"}
-    X -->|"No"| D
-    X -->|"Yes"| F2["Bounded Luna correction"]
-    F2 --> V
-```
-
-Fast mode stays off when allowance longevity matters. Parallel workers are limited to independent tasks. The orchestrator sleeps while workers execute. Frontier reasoning is reintroduced at architectural and risk boundaries rather than kept permanently in the loop.
-
-## This is not "use the cheapest model"
-
-The goal is not cheapness. It is **economic correctness**.
-
-Using an efficient model for an underspecified architecture problem can create more rework than it saves. Using Astra to poll two workers for twenty minutes can burn premium allowance without improving a line of code.
-
-The correct question is:
-
-> Where does another unit of frontier reasoning have the highest expected marginal value?
-
-Sometimes the answer is the first five minutes. Sometimes it is the final security review. Often it is not the thirty minutes in between.
-
-## What Durable Threads is becoming
-
-Durable Threads started as a way to preserve named worker sessions and bounded evidence across Codex, Claude Code, Grok Build, and Cursor Agent.
-
-The next layer is model economics: explicit execution classes, R0–R4 risk, evidence-gated escalation, frozen decisions/invariants, sleeping orchestration, deterministic verification, and outcome telemetry by task class/model/effort/rework/acceptance.
-
-The long-term goal is not to hard-code today's favorite model. It is to learn, from measured outcomes, which model class and effort produces the most accepted work for the available budget.
-
-## Sources and further reading
+## Sources and caveats
 
 - [OpenAI — Managing usage with GPT-6 Astra in Work and Codex](https://help.openai.com/en/articles/20001516)
-- [OpenAI — GPT-5.6 Luna model documentation](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+- [OpenAI — GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
 - [OpenAI — Models](https://developers.openai.com/api/docs/models)
-- [OpenAI Codex #35108 — repeated parent turns during wait_agent polling](https://github.com/openai/codex/issues/35108)
-- [OpenAI Codex #41875 — align wait_agent timeout with prompt-cache TTL](https://github.com/openai/codex/issues/41875)
+- [OpenAI Codex #35108 — repeated parent turns during `wait_agent` polling](https://github.com/openai/codex/issues/35108)
+- [OpenAI Codex #41875 — `wait_agent` timeout and prompt-cache behavior](https://github.com/openai/codex/issues/41875)
 - [Community telemetry — Astra parent / Luna worker quota investigation](https://www.reddit.com/r/codex/comments/1wa9c9d/i_investigated_why_gpt6_astra_burns_quota_so_fast/)
 
-Community measurements are observations, not official OpenAI guarantees. Model availability, limits, and product behavior change; check current OpenAI documentation before treating any allowance number as fixed.
+OpenAI's allowance ranges and product behavior change over time. Community telemetry is anecdotal. The model-routing recommendations in this article are Durable Threads policy and my current operating preference, not an OpenAI guarantee or an official benchmark result.

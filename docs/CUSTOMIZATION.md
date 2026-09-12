@@ -1,29 +1,27 @@
 # Customization
 
-Durable Threads uses progressive disclosure. Start with zero project configuration and add policy only when it solves a real problem.
+Durable Threads uses progressive disclosure: start with zero project configuration and add policy only when it solves a real problem.
 
 ```mermaid
-flowchart TB
-    L0["Level 0 · Defaults<br/>install + use"] --> L1["Level 1 · Task override<br/>prompt only"]
-    L1 --> L2["Level 2 · Repository policy<br/>AGENTS.md"]
-    L2 --> L3["Level 3 · Advanced orchestration<br/>roster + helper"]
+flowchart LR
+    L0["Level 0<br/>Install + use"] --> L1["Level 1<br/>Task override"] --> L2["Level 2<br/>AGENTS.md policy"] --> L3["Level 3<br/>Roster + helper"]
 ```
 
 Most users should remain at Level 0 or Level 1.
 
 ## Level 0 — use the defaults
 
-Install the plugin and ask it to do the work.
+Install the plugin and ask it to do the work:
 
 ```text
 Use Durable Threads to implement this feature efficiently and verify it.
 ```
 
-The bundled skill chooses a bounded workflow, classifies risk, prefers deterministic checks, and escalates only when evidence or consequence warrants it.
+The bundled skill decides whether a handoff is useful, classifies consequence, freezes a bounded contract, prefers deterministic checks, and escalates only when evidence or risk warrants it.
 
 ## Level 1 — override one task
 
-State the exception in your prompt. Examples:
+Put the exception in the prompt. No configuration file is needed for a one-off preference.
 
 ```text
 Use Durable Threads. Keep implementation on the efficient high-reasoning model and require frontier review only if this becomes R3+.
@@ -37,13 +35,9 @@ Treat this authentication change as R3 and require independent security review.
 Do not delegate this one; keep it in the current task.
 ```
 
-No configuration file is needed for a one-off preference.
-
 ## Level 2 — repository policy in AGENTS.md
 
-Use `AGENTS.md` when a preference should apply consistently in one repository. Keep it concise and state policy rather than volatile model IDs.
-
-Example:
+Use `AGENTS.md` when a preference should apply consistently in one repository. Prefer durable roles and safety policy over temporary model IDs.
 
 ```markdown
 ## Durable Threads
@@ -55,49 +49,40 @@ Example:
 - Do not poll healthy workers repeatedly.
 ```
 
-This is usually enough for a team that wants stable behavior without introducing a roster.
+For many teams, this is enough structure without introducing a roster.
 
 ## Level 3 — explicit roster and Python helper
 
-Use the optional helper when you need one or more of these:
+Use the optional helper when you need reproducible routing for benchmarks, named persistent sessions, explicit parallel-worker limits, structured provider/session ledgers, deterministic provider command rendering, or multi-provider Claude/Grok/Cursor workers.
 
-- reproducible routing for benchmarks;
-- named persistent worker sessions;
-- explicit parallel-worker limits;
-- structured provider/session ledgers;
-- deterministic provider command rendering;
-- multi-provider Claude/Grok/Cursor workers.
+Start from `examples/roster.json` for Codex-oriented experiments or `examples/multi-provider-roster.json` for explicit provider splits.
 
-Start from `examples/roster.json` for Codex-oriented work or `examples/multi-provider-roster.json` for explicit provider splits.
-
-The helper is intentionally not part of the quick-start path.
+The helper is intentionally outside the quick-start path.
 
 ## Model selection
 
-Prefer roles over names in durable policy:
+Prefer durable roles over volatile names:
 
 - `efficient` for sustained bounded execution;
 - `balanced` for harder general reasoning;
-- `frontier` for consequential decisions and review.
+- `frontier` for consequential decisions and independent review.
 
-Reasoning effort is a separate dimension. An efficient model at high/XHigh reasoning can be an excellent implementor when the task packet is well specified. Frontier effort should rise only when task consequence or observed failure justifies it.
+Reasoning effort is a separate dimension. An efficient model at high/XHigh reasoning can be a strong implementer when the contract is well specified. Raise frontier effort when consequence or observed failure justifies it—not because a task sounds important.
 
-If the runtime exposes a live catalog, resolve against it. Do not bake a temporary model slug into durable policy unless you intentionally want a pinned experiment.
+If the runtime exposes a live catalog, resolve against it. Pin a concrete model ID only when you intentionally want a reproducible experiment.
 
 ## Review policy
 
 ```mermaid
-flowchart TB
-    R["Risk class"] --> G{"Which tier?"}
+flowchart LR
+    R["Risk class"] --> G{"Tier"}
     G -->|"R0–R1"| D["Deterministic checks"]
     G -->|"R2"| I["Integration review"]
     G -->|"R3–R4"| F["Frontier / specialist review"]
 ```
 
-Override risk explicitly when repository facts are stronger than keyword classification.
+Override risk explicitly when repository facts are stronger than the classifier.
 
 ## Multi-provider setup
 
-Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent. Those adapters are optional. Configure them only if you want them, then use the advanced roster/provider documentation.
-
-See `plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md`.
+Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent. Those adapters are optional. Configure them only if you want external workers, then use `plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md`.

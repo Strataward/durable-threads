@@ -2,32 +2,32 @@
 
 Last audited: **2026-09-12**.
 
-This file distinguishes current OpenAI product behavior from Durable Threads policy. Product behavior can change; re-check the linked sources when installation or plugin semantics matter.
+This document separates current OpenAI product behavior from Durable Threads policy. Product surfaces move quickly; re-check the linked sources when installation, packaging, or plugin semantics matter.
 
-## What OpenAI currently documents
+## Current OpenAI behavior used by this repository
 
-### Skills are the workflow authoring format
+### Skills author reusable workflows
 
-OpenAI describes skills as reusable workflows that package instructions and optional resources. Codex can invoke a skill explicitly or select it from its description.
+OpenAI describes skills as reusable workflows made from instructions plus optional resources/scripts. Codex can discover local skills from supported `.agents/skills` locations, and skills can also be bundled inside plugins.
 
-Durable Threads consequence: the workflow lives in one canonical `SKILL.md` tree.
+**Durable Threads consequence:** the workflow has one canonical `SKILL.md` tree under the plugin.
 
-Source: https://developers.openai.com/codex/skills/
+Source: https://learn.chatgpt.com/docs/build-skills
 
-### Plugins are the reusable distribution surface
+### Plugins distribute reusable capabilities
 
-OpenAI describes plugins as bundles that can contain skills and other capabilities. Its skills guidance explicitly recommends designing the workflow as a skill, then packaging it as a plugin when other people should install it.
+OpenAI recommends designing the workflow as a skill and packaging it as a plugin when other people should install it. Plugins can bundle skills and optional connector/MCP capabilities.
 
-Durable Threads consequence: **plugin = distribution; bundled skill = implementation**. They are not presented as two products users must choose between.
+**Durable Threads consequence:** **plugin = distribution; bundled skill = workflow implementation**. They are not two products a normal user must install separately.
 
 Sources:
 
-- https://developers.openai.com/codex/plugins/
-- https://developers.openai.com/codex/skills/
+- https://learn.chatgpt.com/docs/plugins
+- https://learn.chatgpt.com/docs/build-skills
 
-### Plugin layout and marketplace layout
+### Canonical plugin and marketplace layout
 
-Current Codex plugin-creator references use:
+The current Codex plugin-creator scaffold uses:
 
 ```text
 <plugin>/.codex-plugin/plugin.json
@@ -36,71 +36,79 @@ Current Codex plugin-creator references use:
 <repo>/plugins/<plugin-name>/...
 ```
 
-A repo/team marketplace entry points at `./plugins/<plugin-name>` and includes installation/authentication policy metadata.
+Repo/team marketplace entries point at a plugin path such as `./plugins/<plugin-name>`.
 
-Durable Threads follows that layout.
+**Durable Threads consequence:** the repository layout follows this scaffold and keeps one bundled skill source.
 
-Source: https://github.com/openai/codex/tree/main/codex-rs/skills/src/assets/samples/plugin-creator
+Sources:
+
+- https://github.com/openai/codex/tree/main/codex-rs/skills/src/assets/samples/plugin-creator
+- https://github.com/openai/codex/blob/main/codex-rs/skills/src/assets/samples/plugin-creator/references/plugin-json-spec.md
 
 ### Git repository marketplace sources
 
-The current Codex CLI accepts a marketplace source as a local path, `owner/repo`, HTTPS Git URL, or SSH Git URL. The CLI help includes an `owner/repo --ref main` example.
+The current Codex CLI accepts marketplace sources including local paths, `owner/repo`, HTTPS Git URLs, and SSH Git URLs. Its help includes an `owner/repo --ref main` example.
 
-Durable Threads consequence: the documented GitHub install uses:
+**Durable Threads consequence:** the documented marketplace command is:
 
 ```bash
 codex plugin marketplace add Strataward/durable-threads --ref main
-codex plugin add durable-threads@strataward
 ```
 
 Source: https://github.com/openai/codex/blob/main/codex-rs/cli/src/marketplace_cmd.rs
 
-### Newly installed plugins/skills need a new session boundary
+### Direct plugin add syntax
 
-Current OpenAI plugin and skill docs recommend a new chat/session after installation or meaningful skill changes so the runtime discovers the new capability.
+The current Codex CLI exposes `codex plugin add` and accepts either `PLUGIN@MARKETPLACE` or `PLUGIN --marketplace MARKETPLACE`.
+
+**Durable Threads consequence:** this install command is intentional and current:
+
+```bash
+codex plugin add durable-threads@strataward
+```
+
+Source: https://github.com/openai/codex/blob/main/codex-rs/cli/src/plugin_cmd.rs
+
+### New session after plugin install
+
+OpenAI's plugin guidance instructs Codex CLI users to start a new session after installing from a configured marketplace before using bundled skills or tools.
+
+Source: https://learn.chatgpt.com/docs/plugins
+
+### IDE extension limitation
+
+OpenAI currently documents that plugins are not supported in the Codex IDE extension. Standalone skills are the fallback for that surface.
 
 Sources:
 
-- https://developers.openai.com/codex/plugins/
-- https://developers.openai.com/codex/skills/
+- https://learn.chatgpt.com/docs/plugins
+- https://learn.chatgpt.com/docs/build-skills
 
-### IDE extension plugin support
+## Durable Threads policy — not an OpenAI guarantee
 
-OpenAI's current plugin docs state that the Codex IDE extension does not support plugins. Standalone skills remain the fallback for that surface.
+The following are project choices or empirical strategies:
 
-Source: https://developers.openai.com/codex/plugins/
-
-## What is Durable Threads policy, not an OpenAI guarantee
-
-The following are project decisions or empirical strategies rather than promises from OpenAI:
-
-- Luna/XHigh-like efficient implementation as a preferred workhorse strategy;
-- R0-R4 consequence classification;
-- frontier review at R3+;
+- efficient high/XHigh implementation as a preferred workhorse strategy;
+- R0–R4 consequence classification;
+- frontier/specialist review at R3+ by default;
 - the sleeping-orchestrator invariant;
 - one focused correction by default;
-- the escalation ladder from efficient → balanced → frontier;
-- any benchmark result or claim about relative quota efficiency.
+- escalation from efficient → balanced → frontier;
+- any claim about relative quota efficiency or task-level model performance.
 
-We keep these policies separate from installation/product compatibility claims.
+The docs should label these as policy, recommendation, or observed behavior rather than attributing them to OpenAI.
 
-## Avoided claims
+## Claims we intentionally avoid
 
-The docs intentionally do not claim:
+We do not claim that Durable Threads is currently listed in the public Plugin Directory, that every ChatGPT surface can install directly from this GitHub repository, that plugin installation configures Claude/Grok/Cursor, that model names or allowance ratios are permanent, or that a packet path allow-list is a filesystem sandbox.
 
-- that Durable Threads is currently listed in the ChatGPT Plugin Directory;
-- that every ChatGPT surface can install directly from this GitHub repo;
-- that installing the plugin automatically configures Claude/Grok/Cursor;
-- that model names, usage allowances, or quota ratios are permanent;
-- that a path allow-list is a filesystem sandbox.
+## Release audit checklist
 
-## Audit checklist for future releases
+Before changing installation or compatibility docs:
 
-Before changing installation documentation:
-
-1. Re-read the OpenAI skills and plugins pages.
-2. Check the current plugin creator manifest and marketplace specs in `openai/codex`.
-3. Check current `codex plugin marketplace add` CLI source/help.
-4. Confirm supported product surfaces, especially the IDE extension.
+1. Re-read the current OpenAI plugin and skill pages.
+2. Check the Codex plugin-creator manifest and marketplace spec.
+3. Check the current `codex plugin marketplace add` and `codex plugin add` CLI source/help.
+4. Confirm supported product surfaces, especially IDE behavior.
 5. Run repository validation and CI.
-6. Date this document with the new audit date.
+6. Update the audit date.
