@@ -14,6 +14,32 @@ A better architecture is to separate **decision work** from **execution work**.
 
 That principle is the basis of the current Durable Threads design.
 
+```mermaid
+flowchart LR
+    U["User objective"] --> D
+
+    subgraph D["Decision plane — scarce, high-leverage reasoning"]
+        P["Plan architecture"] --> B["Freeze boundaries"]
+        B --> I["Define invariants"]
+        I --> A["Set acceptance criteria"]
+    end
+
+    A --> H["Bounded implementation contract"]
+
+    subgraph E["Execution plane — sustained workhorse reasoning"]
+        W["Implement"] --> T["Run deterministic checks"]
+        T --> F{"Checks pass?"}
+        F -->|"No"| C["Focused correction"]
+        C --> T
+    end
+
+    H --> W
+    F -->|"Yes"| R{"Risk or ambiguity warrants frontier review?"}
+    R -->|"No"| X["Integrate"]
+    R -->|"Yes"| V["Frontier / specialist review"]
+    V --> X
+```
+
 ## The surprising part: Luna XHigh is a serious implementation model
 
 OpenAI describes GPT-5.6 Luna as the cost-sensitive, high-volume member of the GPT-5.6 family. It supports reasoning levels through `xhigh` and `max`, exposes a 1.05M-token context window, and supports up to 128K output tokens. On the API, its published token price is dramatically below the larger models. [OpenAI: GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
@@ -26,11 +52,12 @@ If Astra is somewhat more likely to solve a bounded implementation task on the f
 
 The objective becomes:
 
-```text
-accepted correct work
----------------------
-scarce allowance + latency + rework
-```
+$$
+\text{Workflow utility}
+=
+\frac{\text{accepted correct work}}
+{\text{scarce allowance} + \text{latency} + \text{rework}}
+$$
 
 In practice, Luna XHigh is particularly compelling once the architecture has already been decided and the task has been converted into a bounded implementation contract.
 
@@ -52,18 +79,24 @@ A detailed community telemetry post reported 47 no-op checks in one Astra-parent
 
 The architectural response is simple: **use a sleeping orchestrator**.
 
-```text
-planner wakes
-    ↓
-makes a consequential decision
-    ↓
-dispatches bounded worker
-    ↓
-planner sleeps
-    ↓
-worker completes and returns evidence
-    ↓
-planner wakes only if another consequential decision is required
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant P as Frontier planner
+    participant W as Workhorse worker
+    participant V as Deterministic verification
+
+    U->>P: Objective
+    P->>P: Make consequential decisions
+    P->>W: Dispatch bounded implementation contract
+    Note over P: Sleep — no status polling
+    W->>W: Implement and debug
+    W->>V: Run tests / typecheck / lint / CI
+    V-->>W: Evidence
+    W-->>P: Completion + compact evidence
+    P->>P: Wake only for review, ambiguity, or escalation
+    P-->>U: Integrated result
 ```
 
 The frontier model should not remain awake merely to supervise healthy execution.
@@ -90,24 +123,41 @@ Durable Threads uses five consequence classes:
 
 A useful Plus-oriented default is efficient execution across all classes, with stronger planning/review as risk increases. R3/R4 are where frontier review earns its cost.
 
+```mermaid
+flowchart LR
+    R0["R0 · Mechanical"] --> R1["R1 · Bounded"] --> R2["R2 · Integration"] --> R3["R3 · Critical"] --> R4["R4 · Systemic"]
+
+    R0 -.-> E0["Machine checks"]
+    R1 -.-> E1["Efficient review when useful"]
+    R2 -.-> E2["Integration review"]
+    R3 -.-> E3["Frontier / specialist review"]
+    R4 -.-> E4["Frontier architecture + review"]
+```
+
 The exact model names will change. The architecture should not. That is why Durable Threads stores provider-neutral roles such as `efficient`, `balanced`, and `frontier` and resolves them against live model catalogs when possible.
 
 ## Escalate on evidence, not prestige
 
 The economic escalation ladder is:
 
-```text
-Luna XHigh
-    ↓ failed acceptance
-focused correction / better packet
-    ↓ repeated conceptual failure
-Sol Medium
-    ↓ architecture ambiguity
-Astra Low
-    ↓ genuinely difficult decision
-Astra Medium
-    ↓ exceptional case only
-Astra High / XHigh / Max
+```mermaid
+flowchart TD
+    L["Luna XHigh<br/>default workhorse"] --> Q1{"Acceptance failed?"}
+    Q1 -->|"No"| DONE["Done"]
+    Q1 -->|"Yes"| FIX["Improve packet or make a focused correction"]
+    FIX --> L2["Luna XHigh retry"]
+    L2 --> Q2{"Same conceptual failure?"}
+    Q2 -->|"No"| DONE
+    Q2 -->|"Yes"| S["Sol Medium"]
+    S --> Q3{"Architecture ambiguity remains?"}
+    Q3 -->|"No"| DONE
+    Q3 -->|"Yes"| A1["Astra Low"]
+    A1 --> Q4{"Genuinely difficult decision unresolved?"}
+    Q4 -->|"No"| DONE
+    Q4 -->|"Yes"| A2["Astra Medium"]
+    A2 --> Q5{"Exceptional case with evidence for more effort?"}
+    Q5 -->|"No"| DONE
+    Q5 -->|"Yes"| AX["Astra High / XHigh / Max"]
 ```
 
 Escalation is triggered by **failure evidence**: failed tests, repeated invariant violations, discovered shared state, or plausible security findings. "This task looks important" is not evidence that every token should be frontier-priced.
@@ -116,18 +166,18 @@ Escalation is triggered by **failure evidence**: failed tests, repeated invarian
 
 If correctness can be checked with a compiler, type checker, unit test, integration test, schema validator, static analyzer, migration check, or CI workflow, use that machinery before paying another model to reason about the same property.
 
-```text
-worker implements
-      ↓
-deterministic checks
-      ↓
-failed? ── yes ──> focused worker correction
-      │
-      no
-      ↓
-risk gate
-      ↓
-independent model review only where it adds value
+```mermaid
+flowchart TD
+    W["Workhorse implements"] --> D["Deterministic checks<br/>tests · types · lint · schema · CI"]
+    D --> P{"All required checks pass?"}
+    P -->|"No"| C["Focused worker correction<br/>name the failed check + violated invariant"]
+    C --> D
+    P -->|"Yes"| G{"Risk gate"}
+    G -->|"R0–R1"| I["Integrate"]
+    G -->|"R2"| R["Integration review"]
+    G -->|"R3–R4"| F["Independent frontier / specialist review"]
+    R --> I
+    F --> I
 ```
 
 ## Persistent threads are an economic primitive
@@ -138,29 +188,23 @@ Persistent sessions are useful when retained context is relevant. They are harmf
 
 ## The workflow I use on Plus
 
-```text
-                    Astra Low / Sol Medium
-                      plan + freeze decisions
-                              │
-                              ▼
-                         Luna XHigh
-                        implementation
-                              │
-                              ▼
-                     deterministic checks
-                              │
-                              ▼
-                         Luna XHigh
-                       first-line review
-                              │
-                    high-risk or ambiguous?
-                       no │       │ yes
-                          ▼       ▼
-                        done   Astra Low/Medium
-                                  │
-                                  ▼
-                              Luna XHigh
-                               correction
+```mermaid
+flowchart TD
+    U["Feature / bug / refactor"] --> P["Astra Low or Sol Medium<br/>plan + freeze decisions"]
+    P --> C["Implementation contract<br/>objective · decisions · invariants · non-goals · acceptance"]
+    C --> L1["Luna XHigh<br/>implementation"]
+    L1 --> M["Deterministic checks"]
+    M --> OK{"Checks pass?"}
+    OK -->|"No"| LC["Luna XHigh<br/>focused correction"]
+    LC --> M
+    OK -->|"Yes"| LR["Luna XHigh<br/>first-line review"]
+    LR --> R{"High-risk, ambiguous, or repeated failure?"}
+    R -->|"No"| DONE["Integrate / done"]
+    R -->|"Yes"| A["Astra Low / Medium<br/>consequential review"]
+    A --> AF{"Correction required?"}
+    AF -->|"No"| DONE
+    AF -->|"Yes"| L2["Luna XHigh<br/>bounded correction"]
+    L2 --> M
 ```
 
 Fast mode stays off when allowance longevity matters. Parallel workers are limited to independent tasks. The orchestrator sleeps while workers execute. Frontier reasoning is reintroduced at architectural and risk boundaries rather than kept permanently in the loop.
