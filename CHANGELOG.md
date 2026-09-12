@@ -7,45 +7,43 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
-### Fixed
+### Planned
 
-- Accept an explicit empty concerns array without a model correction. Missing fields still fail.
+- Add CLI flags for explicit `decisions`, `invariants`, `non-goals`, and risk override; the Python packet API already carries these fields.
+- Expand matched model/effort benchmarks before making empirical routing automatic.
 
-- Persist the original task retry limit. Reject changes and legacy records without a limit.
-- Reject invalid JSON list fields instead of discarding invalid entries.
-
-### Changed
-
-- Prefer the current retained session when its model and context fit the work.
-- Add an optional output schema and a guide for deciding when a handoff adds value.
-- Record the final comparison against a direct retained session, not only fresh sessions.
-
-- Keep routing instructions with the planner. Send only the task packet to workers.
-- Prefer direct execution for small tasks and one persistent worker for related work.
-- Keep subscription savings unproven until a matched evaluation supports them.
+## [0.3.0] - 2026-09-12
 
 ### Added
 
-- Selective routing with explicit worker selection and a local-only route.
-- Evidence parsing and comparison with changed repository paths.
-- Optional dispatch records with usage counters and session identity checks.
-- Exclusive ledger transaction locks and bounded follow-up indices.
-- Failure tests for blocked states, session drift, and repeated calls.
-
-### Limits
-
-- Token savings remain unmeasured. Provider recovery remains manual.
-- Evidence validation does not execute reported checks or sandbox file writes.
-
-- Initial public release of the Codex Thread Loom skill and helper library.
-- Durable-thread operating policy for planning, execution, review, and recovery.
-- Model discovery and role-based routing contracts.
-- Redacted local ledger support for task state and usage evidence.
-- Mermaid architecture diagram in the README.
+- Model-economic orchestration strategy with `economy`, `balanced`, and `frontier` profiles.
+- Execution classes: `decision`, `workhorse`, `review`, and `specialist`.
+- Deterministic R0-R4 task-risk classification and risk-aware security routing.
+- Frontier-review threshold and evidence-gated model escalation policy.
+- Sleeping-orchestrator policy to prevent repeated unchanged-state parent polling.
+- Rich implementation packets with frozen decisions, invariants, non-goals, risk, and execution class.
+- Detailed model-economics, risk-routing, packet-contract, architecture, benchmarking, and migration documentation.
+- Long-form article: `docs/articles/frontier-decisions-cheap-execution.md`.
+- Tests for economy defaults, risk classification, high-risk routing, and enriched packets.
 
 ### Changed
 
-- Moved the public repository to the Strataward organization.
+- Reference Codex roster now defaults implementation and test/debug work to `efficient` + `xhigh`.
+- Reference planner frontier effort drops from `high` to `low`.
+- Reference first-line reviewer becomes `efficient` + `xhigh`; frontier review is recommended at R3+.
+- Main doctrine now explicitly separates decision work from execution work.
+- README and plugin metadata now point to the Strataward repository.
+- Package and plugin version bumped to 0.3.0.
+
+### Compatibility
+
+- Schema-v1 rosters continue to load.
+- Pre-v0.3 repository state is preserved at `archive/pre-model-economics-2026-09-12`.
+
+### Evidence note
+
+- Current OpenAI usage figures and model guidance are linked as dated references, not encoded as permanent constants.
+- Community telemetry is treated as observational evidence rather than an official quota guarantee.
 
 ## [0.2.0] - 2026-09-05
 

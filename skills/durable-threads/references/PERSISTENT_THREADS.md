@@ -2,85 +2,50 @@
 
 ## What durable means
 
-Durable Threads preserves the worker title, provider, provider session ID, task
-status, and compact evidence. It does not own the provider's private runtime.
-It does not restart a provider after a quota error. It does not clear an active
-writer that the provider reports.
+Durable Threads preserves stable worker identity, provider, provider session ID, task status, compact evidence, and usage counters when available. It does not promise provider-process recovery after quota failure, crash, or unknown writer state.
 
-## Roster fields
+## Why persistence matters
 
-Each worker entry should have:
-
-- a unique `name`;
-- a provider such as `codex`, `claude`, `grok`, or `cursor`;
-- an exact `threadTitle`;
-- a purpose;
-- a role selector;
-- a reasoning effort;
-- an optional local provider `threadId`;
-- a maximum follow-up count.
-
-Never commit real thread or provider session IDs. An ID can expose project
-history or local account state.
+A useful persistent worker can retain provider-local context without forcing the planner to replay a large transcript. Persistence is economically useful only while retained context remains relevant.
 
 ## Resolve
 
-1. List current tasks.
-2. Find the exact title and provider.
-3. Check the task status and project directory.
-4. Confirm that the worker purpose matches the packet.
-5. Reuse an idle matching task or provider session.
-6. Ask before creating a new task when no match exists.
+1. List current provider tasks/sessions.
+2. Match exact worker title and provider.
+3. Confirm project directory and idle/finished state.
+4. Confirm worker purpose matches the new packet.
+5. Reuse the session if retained context is still useful.
+6. Ask before creating a new provider task when policy requires authorization.
 
-Similar titles are not a match. A stale or unrelated task can carry the wrong
-context.
+Never treat a similar title as the same worker.
 
-## Send and wait
+## Send
 
-Send one packet per worker. Include the run ID so results can be matched.
-Use the provider adapter for Claude, Grok, and Cursor. Use native Codex app
-actions for Codex.
-Wait for up to eight workers in one bounded call. Do not poll unchanged state.
-Read only the completed turn and the evidence needed for integration.
+Send one bounded packet with a new run ID for new work. Include objective, risk, frozen decisions, invariants, non-goals, allowed paths, acceptance, constraints, and result contract. Do not send the planner transcript.
 
-Keep parallel work independent. Do not start a dependent worker until its
-input is available.
+## Wait
+
+The orchestrator should sleep while the worker runs. Use event-driven completion when available. Avoid short repeated timeouts that re-enter the parent model with unchanged state. Do not repeatedly read transcripts to discover nothing changed.
 
 ## Resume
 
-Resume a finished worker only when its provider metadata is valid and its
-runtime supports resume. Claude, Grok, and Cursor use their provider session
-resume controls. Codex uses the native task action. Use a focused follow-up
-that names the failed check.
-Do not resend the full original packet.
+Resume for a focused correction only when provider metadata is valid, resume is supported, the failure is concrete, and the correction count remains within policy. Identify the failed check and invariant; do not resend the entire original packet unless material facts changed.
 
-Use at most one correction by default. Set the limit before the task starts.
+## New objective vs correction
 
-The local ledger enforces the follow-up index. It rejects a provider change or
-session ID change during a follow-up. It also rejects a changed retry limit.
-Stop when the limit is reached. Do not rotate IDs to retry the same failed work.
-A new, distinct objective can reuse an idle session with a new task record.
-This is new work, not a correction. Keep both records for review.
+A distinct objective can reuse an idle worker with a new task record. A retry repairs the same acceptance failure. Do not rotate IDs to bypass retry policy.
 
 ## Recovery states
 
 | State | Action |
 | --- | --- |
-| idle or finished | Send a new bounded turn. |
-| active writer | Wait for a state change. Stop the exact stale task only after review. |
-| usage limit | Record the limit. Wait for reset or use a declared fallback. |
-| missing provider metadata | Do not resume. Start a new authorized task if needed. |
-| provider failure | Preserve evidence. Classify the failure before retry. |
-| unknown status | Inspect once. Do not issue repeated writes. |
+| idle/finished | send new bounded objective |
+| active writer | wait for material state change |
+| usage limit | record stop; wait for reset or declared fallback |
+| missing provider metadata | do not resume blindly |
+| provider failure | classify before retry |
+| unknown status | inspect once, then stop writes until resolved |
 
-The local writer guard covers tasks that use the same ledger. It is not a
-provider status API. Treat a provider-side active-writer response as unknown
-state and stop.
+## Retirement
 
-The active-writer rule matters because a failed follow-up can leave provider
-state alive even when the local task record looks stale.
-
-## Retire
-
-Archive a worker only when the user asks or when the roster explicitly defines
-retirement. Keep the ledger entry so the decision remains auditable.
+Retire or archive a worker only when requested or when roster policy defines retirement. Preserve redacted ledger history so routing evaluations remain auditable.

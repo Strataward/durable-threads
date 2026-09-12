@@ -1,62 +1,62 @@
 ---
 name: durable-threads
-description: Coordinate bounded work across separate provider sessions when model specialization or independent ownership requires a handoff. Do not use merely to continue related edits in a suitable current task.
+description: Coordinate bounded engineering work across durable provider sessions with risk-aware, model-economic routing. Use frontier reasoning for consequential decisions and efficient high-reasoning workers for sustained execution.
 ---
 
 # Durable Threads
 
-Keep simple work in the current task. Continue related edits there when its
-model and context are suitable. When a handoff is useful, prefer one existing
-worker. Add a second worker only for independent work. Do not delegate merely
-because this skill is loaded.
+Use Durable Threads when a handoff improves model fit, context isolation, independent ownership, or economic efficiency. Keep simple work in the current task.
 
-If the current task already has the right context and model, continue there.
-Use a worker for a cheaper suitable model, narrower context, or independent
-ownership. Session reuse alone does not require this skill.
-Read `references/WHEN_TO_USE.md` when the choice is unclear.
+The operating principle is:
 
-The planner owns scope, model selection, review, and integration. Workers need
-the task packet, not this skill or the planner's conversation. Read only the
-reference needed for the current operation.
+> Frontier decisions. Workhorse execution. Deterministic verification. Evidence-gated escalation.
 
-## Send work
+The planner owns architecture, scope, risk, acceptance, escalation, review policy, and integration. Workers receive a bounded implementation contract, not the planner's transcript.
 
-1. Define the task, allowed paths, exact acceptance checks, and constraints.
-2. Resolve the idle worker by its recorded provider and session ID.
-3. Send the packet with the JSON result shape below.
-4. Wait for completion without repeated transcript reads.
-5. Inspect the diff and run the acceptance checks before integration.
+## 1. Decide whether to hand off
 
-Use the least expensive available model that passes the task checks. Reserve
-frontier reasoning for difficult planning or review. Verify model availability;
-do not guess IDs or change providers without disclosure. Read
-`references/ASTRA.md` only when selecting a frontier Codex model.
+Continue locally when the current task has the right model, context, and ownership. Use a durable worker when a cheaper suitable model can perform sustained execution, context should be isolated, independent work can run safely in parallel, a specialist review needs independence, or a persistent provider session already contains useful context.
 
-For native Codex tasks, read `references/PERSISTENT_THREADS.md`. Use the app's
-list, send, wait, and read actions. Create a new task only with explicit user
-authorization. For Claude, Grok, or Cursor, read `references/PROVIDERS.md`.
-The CLI helper does not dispatch Codex. State when an evaluation uses Codex CLI
-sessions instead of native app tasks.
+Read `references/WHEN_TO_USE.md` when unclear.
 
-## Keep limits
+## 2. Classify risk
 
-Default to at most two workers and one correction for a demonstrated defect.
-Read `references/OPERATING_POLICY.md` before dispatch or recovery. Keep the
-original retry limit for the task. Stop on quota, authentication failure,
-uncertain writer state, or exhausted retries. Do not retry until the cause is
-resolved. An existing session ID does not prove safe execution recovery.
+Classify the objective R0–R4 before deciding review depth: R0 mechanical, R1 bounded, R2 integration, R3 critical, R4 systemic.
 
-Keep session IDs and compact evidence in ignored local state. Do not send
-secrets, private data, or transcripts. A packet's allowed paths do not prevent
-writes. Use isolation and inspect all changed paths. Commit, push, merge, and
-deploy only with user authorization.
+Read `references/RISK_ROUTING.md`. The deterministic helper is advisory; explicitly override when repository facts justify it.
 
-## Worker result
+## 3. Freeze the implementation contract
 
-Include this shape in the packet. The provider identifies the worker itself.
-Use empty arrays for no changed paths. Record exact checks and their results.
-An explicit empty concerns array means no concerns. Missing fields still fail.
-When supported, use `references/RESULT.schema.json` as the output schema.
+Before dispatch, define objective, decisions already made, invariants, non-goals, allowed paths, exact acceptance checks, constraints, and risk class.
+
+Read `references/PACKET_CONTRACT.md`. Do not make a workhorse rediscover architecture that the planner can decide once.
+
+## 4. Select economically
+
+Use the least expensive model/effort combination that can reliably satisfy acceptance.
+
+For constrained Codex/Work usage, prefer:
+
+- implementation/debugging: `efficient` + `xhigh`;
+- difficult general planning: `balanced` + `medium`;
+- consequential architecture/review: `frontier` + `low` or `medium`;
+- higher frontier effort only after evidence shows it is needed.
+
+Do not hard-code provider model names when a live catalog is available. Read `references/MODEL_ECONOMICS.md` and `references/ASTRA.md`.
+
+## 5. Dispatch and sleep
+
+Resolve the idle worker by provider and exact session identity. Send one packet. Then let the orchestrator sleep.
+
+Do not repeatedly poll unchanged worker state or reread transcripts while execution is healthy. Wake the planner for completion, material evidence, provider failure, user steering, or a consequential decision.
+
+Read `references/PERSISTENT_THREADS.md`.
+
+## 6. Verify deterministically first
+
+Prefer compiler, tests, type checking, static analysis, schema checks, migration checks, and CI before another model review. Inspect the actual diff; an allowed-path instruction is not a sandbox.
+
+A worker result must include:
 
 ```json
 {
@@ -68,10 +68,32 @@ When supported, use `references/RESULT.schema.json` as the output schema.
 }
 ```
 
-Use `blocked` or `failed` when work cannot complete. Do not report unexecuted
-checks as passed. Read `references/RESULT_SCHEMA.md` for verification details.
-`verify-result` checks claims against the diff; it does not run tests.
+Missing evidence is incomplete. Do not report an unexecuted check as passed.
 
-For comparisons, read `references/VALIDATION.md` and `references/COMPARISON.md`.
-Count planning, worker calls, review, and corrections. Keep missing usage and
-subscription cost unknown. Do not claim savings from raw token counts alone.
+## 7. Apply the risk gate
+
+Default economy policy recommends frontier review at R3 and above. R0/R1 normally use deterministic checks and efficient review only when useful. R2 gets integration review. R3/R4 get independent specialist/frontier review.
+
+Do not use Astra to review every small edit.
+
+## 8. Correct or escalate from evidence
+
+Default correction limit is one focused retry. Name the failed check and violated invariant.
+
+If the same conceptual failure repeats, escalate:
+
+`efficient/xhigh -> balanced/medium -> frontier/low -> frontier/medium`
+
+Do not escalate based on prestige. Do not rotate task IDs to bypass retry limits.
+
+## 9. Keep hard stops
+
+Stop on quota exhaustion, authentication failure, unknown writer state, session drift, path-scope violation, exhausted corrections, or architecture ambiguity that invalidates the packet.
+
+Push, merge, deploy, publish, account creation, and production changes require explicit user authorization.
+
+## 10. Measure
+
+When comparing strategies, record model usage when available, parent turns, follow-ups, wall time, first-pass acceptance, review defects, corrections, and final correctness. Do not claim savings from token counts alone.
+
+Read `references/BENCHMARKING.md`, `references/VALIDATION.md`, and `references/COMPARISON.md`.

@@ -1,114 +1,102 @@
 # Architecture
 
-Durable Threads is a provider-neutral contract layer. It keeps planning,
-routing, session identity, and evidence separate from provider execution.
+Durable Threads is a provider-neutral orchestration layer for **bounded, durable engineering work**. It separates architectural decisions from sustained execution, retains named provider sessions where useful, and requires evidence before integration.
 
-It is not a workflow engine or a second daemon. It does not promise automatic
-provider restart after a quota error or an active-writer conflict.
+## Design goals
 
-## Components
+1. Spend frontier-model capacity on decisions with high marginal value.
+2. Keep long-running implementation on efficient workhorse models when they can satisfy acceptance checks.
+3. Prevent expensive parent agents from burning context while polling healthy workers.
+4. Preserve worker identity without replaying entire transcripts.
+5. Bound fan-out, corrections, and write scopes.
+6. Prefer deterministic verification over model confidence.
+7. Make routing explainable and benchmarkable.
+8. Stay provider-neutral as model names change.
 
-### Planner and reviewer
+## Control plane and execution plane
 
-The current Codex task owns the user contract. It decides the work split,
-selects roles, reviews evidence, and integrates changes. It remains the final
-authority for scope and acceptance.
+The planner owns scope, architecture decisions, risk classification or override, decomposition, acceptance criteria, worker selection, escalation, and integration. The control plane should be decision dense. A frontier planner should not remain active merely to watch execution progress.
 
-Use a frontier model such as Astra for difficult planning and review when the
-Codex runtime makes it available. The role is a capability choice. The exact
-model ID comes from live discovery.
+Workers own bounded implementation, focused tests, debugging, research/documentation, and specialist review. Workers receive implementation contracts, not the planner transcript.
 
-### Durable workers
+## Core flow
 
-Each worker has a stable human title and a purpose. Typical workers are:
-
-| Worker | Typical use | Default role |
-| --- | --- | --- |
-| implementation | Bounded code changes | efficient |
-| test-debug | Regression tests and focused diagnosis | balanced |
-| research-docs | Repository research and docs | efficient |
-| security-review | Threat review and hardening | frontier or balanced |
-
-The roster stores a title, a provider, and an optional provider session ID. The
-ID stays in local ignored state. The title and provider remain the stable human
-handle.
-
-Durable means that the human handle and the local evidence record survive a
-turn. It does not make the provider's private runtime durable. The planner must
-inspect provider state before it resumes a session.
-
-### Routing gate
-
-The routing gate reads the objective and allowed paths. It selects only the
-workers that match the task. It selects at most two workers by default. An
-explicit `--worker` selection overrides keyword routing within the roster
-limit.
-
-The gate uses simple deterministic signals. It does not replace planner
-judgement. The planner can override it when the task needs a different split.
-
-### Packet builder
-
-The helper library validates a small packet and builds a provider-specific
-argument array. It does not choose a provider model by guesswork. The parent
-can inspect each delegation before it leaves the current task.
-
-### Evidence verifier
-
-The verifier parses the worker result contract. It requires a status, provider,
-changed paths, exact checks, and remaining concerns. It checks each path against
-the allow-list. When a clean baseline is available, it checks the claims against
-the actual git diff.
-
-### Evidence ledger
-
-The local ledger stores task IDs, thread IDs, status, usage counters, and a
-short redacted result. It uses an atomic replace. It writes with mode `0600`.
-It does not store full prompts or transcripts.
-
-The ledger records common input and output token counters when a provider emits
-them. It blocks a second local writer for the same task. It also blocks a
-provider or session ID change during a follow-up. A provider-side active writer
-still requires a manual stop.
-
-## Control flow
-
-```text
-request
-  -> planner reads project and live runtime
-  -> routing gate selects 0-2 workers
-  -> planner creates compact packets
-  -> exact named provider sessions receive packets
-  -> workers return structured evidence
-  -> verifier checks evidence and the actual diff
-  -> reviewer approves or sends one focused correction
-  -> planner integrates the result
+```mermaid
+flowchart TD
+    U[User objective] --> P[Planner]
+    P --> R[Risk classify R0-R4]
+    R --> C[Freeze decisions, invariants, non-goals]
+    C --> G{Need handoff?}
+    G -->|No| L[Continue locally]
+    G -->|Yes| D[Dispatch bounded worker]
+    D --> S[Planner sleeps]
+    D --> W[Workhorse executes]
+    W --> V[Deterministic verification]
+    V -->|pass| Q{Frontier review threshold?}
+    V -->|fail| F[Focused correction]
+    F --> W
+    Q -->|No| E[Efficient review or integrate]
+    Q -->|Yes| A[Frontier/specialist review]
+    A -->|defect| F2[Workhorse correction]
+    F2 --> V
+    A -->|pass| I[Integrate]
+    E --> I
 ```
 
-## Failure flow
+## Sleeping orchestrator invariant
+
+When enabled, a planner must not remain in a short unchanged-state polling loop. Allowed wake conditions are worker completion, provider failure, material new evidence, user steering, or a bounded wait that genuinely requires another decision.
+
+This is disallowed:
 
 ```text
-worker error
-  -> record status and evidence
-  -> classify: scope, test, writer, quota, or provider
-  -> correct once when evidence supports a correction
-  -> stop on quota or ambiguous writer state
+wait 30s -> timed out -> sample parent -> wait 30s -> timed out -> sample parent -> ...
 ```
 
-The system does not treat a missing result as a successful result.
+It can repeatedly reprocess a large parent context without improving the result.
 
-## Efficiency rule
+## Configuration model
 
-Persistent context is not automatically cheaper. A resumed session can carry
-irrelevant history and increase input tokens. The packet stays compact, but the
-planner must rotate a session when the follow-up limit is reached or its context
-no longer matches the task.
+A roster contains defaults for planner/reviewer, a model-economic strategy, named workers, and safety limits.
 
-The default value rule is:
+The strategy contains profile (`economy`, `balanced`, `frontier`), default risk, frontier-review threshold, sleeping-orchestrator setting, and an evidence-gated escalation ladder.
 
-1. Keep the planner and integration owner in the current task.
-2. Use one efficient worker for a bounded implementation.
-3. Add one independent specialist only when it reduces expected rework.
-4. Add frontier review for security, release, or high-risk changes.
-5. Measure total tokens, follow-ups, rework, and correctness before changing
-   the default fan-out.
+Workers contain role, provider, thread identity, purpose, model selector, effort, execution class, correction limit, and parallel eligibility.
+
+## Risk layer
+
+Risk is a consequence classifier, not a difficulty classifier: R0 mechanical, R1 bounded, R2 integration, R3 critical, R4 systemic. The router can infer risk deterministically and the planner can override it.
+
+See `RISK_ROUTING.md`.
+
+## Packet layer
+
+A worker packet contains objective, risk and execution class, decisions, invariants, non-goals, allowed paths, acceptance checks, constraints, result contract, model/effort policy, and correction limit. It deliberately excludes a full transcript.
+
+See `PACKET_CONTRACT.md`.
+
+## Evidence layer
+
+A complete worker result must identify changed paths, exact checks, and remaining concerns. Durable Threads can compare reported paths with the actual git diff. The helper does not treat a worker's assertion that a check passed as equivalent to executing that check.
+
+## Session layer
+
+Durability means retaining provider identity and compact evidence, not assuming a remote process can always be recovered. Session IDs are local state and must not be committed.
+
+## Failure model
+
+Hard-stop conditions include quota exhaustion, authentication failure, unknown writer state, session drift, repeated failure after allowed corrections, path-scope violation, and unresolved ambiguity that invalidates the packet.
+
+Do not rotate task IDs or provider sessions merely to bypass a stop.
+
+## Provider neutrality
+
+Codex can resolve `efficient`, `balanced`, and `frontier` against live model metadata. Other adapters use safe mappings only where the provider exposes stable aliases. The router must not invent model names.
+
+## Security boundary
+
+The packet allow-list is an instruction, not an OS sandbox. Inspect the actual diff. External actions such as push, merge, deploy, publishing, account creation, or production changes require explicit user authorization.
+
+## Benchmark boundary
+
+Architecture claims are hypotheses until measured. See `BENCHMARKING.md` and `VALIDATION.md`.

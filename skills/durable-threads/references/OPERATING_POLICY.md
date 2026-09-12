@@ -2,72 +2,54 @@
 
 ## Default limits
 
-- Use at most two parallel workers.
-- Select at most two workers for one plan unless the roster raises the limit.
-- Use at most one follow-up per worker.
-- Keep one planner and one reviewer in the current task.
-- Keep result summaries below 2,000 characters unless the user needs more.
-- Use one bounded wait for up to eight workers.
-- Do not set a hard goal token budget by default.
-- Keep the provider and provider session ID with every worker record.
+- At most two selected workers and two parallel workers unless a roster raises the limits.
+- At most one focused correction per worker by default.
+- Result summaries below 2,000 characters unless more evidence is required.
+- No hard goal token budget unless the user asks for one.
+- Keep provider/session identity with every worker record.
+- Keep Fast mode off when allowance longevity is the goal.
+- Prefer `economy` strategy for constrained subscription usage.
 
-The plan command enforces the selected-worker limit and the parallel-worker
-limit. The dispatch command enforces the output limit, follow-up limit, and
-local ledger writer guard when the caller supplies a roster and ledger.
+## Sleeping orchestrator rule
 
-The helper does not claim automatic recovery for provider quota errors, private
-active-writer state, or provider process failure. It records the stop state and
-requires a new authorized action.
+When `strategy.sleepingOrchestrator` is enabled, the planner must not poll unchanged worker state in short loops. Dispatch and wake the planner on completion or material change. Repeated no-op wait timeouts are a routing failure because they spend control-plane capacity without producing evidence.
 
-Set limits before a task starts. The ledger stores `maxFollowups` on the first
-call. Later calls must use that same limit. Old records without a limit stop
-for inspection. Do not clear a record or choose a new task ID to bypass a stop.
-An authorized policy change applies to new work, not retries of the same task.
+## Decision/execution separation
 
-## Fan-out rule
+The planner owns architecture, risk, scope, and integration. A workhorse owns bounded implementation. Resolve architecture ambiguity before dispatch; conversely, do not keep a frontier planner in the execution loop merely because it authored the plan.
 
-Fan out only independent work. Keep dependent work in sequence. A worker must
-not modify files outside its packet. The current task owns integration.
+## Fan-out
 
-Automatic routing uses conservative signals. It selects implementation for a
-bounded code change. It adds test, research, or security work only when the
-objective or path names show a matching need. Use an explicit worker selection
-when the planner has better information.
+Fan out only independent work. Verify no overlapping writes, shared migration state, hidden generated-file conflicts, or acceptance dependencies. If uncertain, serialize.
+
+## Risk gate
+
+Classify R0–R4. Default economy policy recommends frontier review at R3+. Lowering an automatically high risk should include a reason.
 
 ## Acceptance rule
 
-Every worker needs an acceptance check that another agent can run. A result
-without exact checks is incomplete. The planner must inspect the actual diff and
-run the checks again when the change affects integration or security.
-
-The result verifier rejects a complete result without a provider, checks, or
-remaining concerns. It rejects a changed path outside the allow-list. It can
-reject a result when its changed-path list does not match a clean git diff.
+Every worker needs checks another agent can run. Prefer compiler/type checker, focused tests, integration tests, schema/migration validation, lint/static analysis, and CI before model review.
 
 ## Correction rule
 
-Send a correction only when the failure is concrete. Name the failed check, the
-expected result, and the allowed paths. Stop when the same failure repeats or
-when the provider reports a quota or authorization limit.
+Send a correction only for a concrete defect. Include failed check/finding, expected result, allowed paths, relevant invariant, and unchanged decisions. Do not resend the full transcript.
 
-The local ledger marks a task as running before dispatch. A second local writer
-for the same task stops. A follow-up must use the recorded provider and session
-ID. The provider can still have an active writer that the local ledger cannot
-see. Treat that provider report as a hard stop.
+## Escalation rule
+
+Default ladder: efficient/xhigh → balanced/medium → frontier/low → frontier/medium. Higher frontier effort requires explicit justification or benchmark evidence.
 
 ## External actions
 
-The skill does not infer permission to push, merge, deploy, publish, create
-accounts, change production settings, or start a provider session that can
-modify files. Ask for a clear user instruction at the boundary. Prepare a
-reviewable result first.
+The skill never infers permission to push, merge, deploy, publish, create accounts, modify production, or change external systems. User authorization must be clear at the action boundary.
 
 ## Privacy
 
-Do not put secrets, environment values, raw logs, child or family data, or
-private customer data in packets, ledgers, model prompts, issues, or commits.
-Use file names and redacted summaries when evidence is enough.
+Do not place credentials, raw private data, environment values, or full sensitive logs into packets, ledgers, prompts, issues, commits, or benchmark fixtures.
 
-Do not claim token savings from packet size alone. Record provider usage when it
-is available. Compare total input tokens, output tokens, follow-ups, rework, and
-correctness against a single-agent baseline before changing the defaults.
+## Recovery
+
+Stop on quota exhaustion, authentication errors, unknown writer state, session drift, unsafe path changes, or ambiguous evidence. Do not create a new task ID solely to bypass a stopped retry counter.
+
+## Measurement
+
+Record provider usage where available. Compare total work, corrections, defects, wall time, and final correctness against matched baselines before changing economic defaults.
