@@ -1,4 +1,4 @@
-"""Load and validate the small JSON roster used by the skill."""
+"""Load and validate the JSON roster used by Durable Threads."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from .providers import PROVIDERS
+from .risk import validate_risk
 
 
 class ConfigError(ValueError):
@@ -15,6 +16,8 @@ class ConfigError(ValueError):
 
 
 _EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
+_EXECUTION_CLASSES = {"decision", "workhorse", "review", "specialist"}
+_PROFILES = {"economy", "balanced", "frontier"}
 
 
 def _text(value: Any, field: str, *, required: bool = True) -> str | None:
@@ -39,17 +42,25 @@ def _provider(value: Any, field: str) -> str:
     return provider.casefold()
 
 
+def _execution_class(value: Any, field: str, default: str) -> str:
+    item = cast(str, _text(value if value is not None else default, field))
+    if item not in _EXECUTION_CLASSES:
+        raise ConfigError(f"{field} must be one of: {', '.join(sorted(_EXECUTION_CLASSES))}")
+    return item
+
+
 @dataclass(frozen=True)
 class RoleConfig:
-    """Model policy for one role."""
+    """Model policy for a planner or reviewer role."""
 
     role: str
     provider: str
     model_selector: str
     reasoning_effort: str
+    execution_class: str
 
     @classmethod
-    def from_dict(cls, data: Any, field: str) -> RoleConfig:
+    def from_dict(cls, data: Any, field: str, *, default_execution_class: str) -> RoleConfig:
         if not isinstance(data, dict):
             raise ConfigError(f"{field} must be an object")
         role = cast(str, _text(data.get("role"), f"{field}.role"))
@@ -59,17 +70,21 @@ class RoleConfig:
         if effort not in _EFFORTS:
             allowed = ", ".join(sorted(_EFFORTS))
             raise ConfigError(f"{field}.reasoningEffort must be one of: {allowed}")
+        execution_class = _execution_class(
+            data.get("executionClass"), f"{field}.executionClass", default_execution_class
+        )
         return cls(
             role=role,
             provider=provider,
             model_selector=selector,
             reasoning_effort=effort,
+            execution_class=execution_class,
         )
 
 
 @dataclass(frozen=True)
 class WorkerConfig:
-    """A named worker thread definition."""
+    """A named durable worker-thread definition."""
 
     name: str
     role: str
@@ -78,6 +93,7 @@ class WorkerConfig:
     purpose: str
     model_selector: str
     reasoning_effort: str
+    execution_class: str
     thread_id: str | None
     max_followups: int
     parallel: bool
@@ -101,6 +117,9 @@ class WorkerConfig:
         }
         if values["reasoning_effort"] not in _EFFORTS:
             raise ConfigError(f"{field}.reasoningEffort is not supported")
+        execution_class = _execution_class(
+            data.get("executionClass"), f"{field}.executionClass", "workhorse"
+        )
         max_followups = _integer(data.get("maxFollowups", 1), f"{field}.maxFollowups")
         if max_followups > 3:
             raise ConfigError(f"{field}.maxFollowups must be <= 3")
@@ -125,6 +144,7 @@ class WorkerConfig:
             purpose=cast(str, values["purpose"]),
             model_selector=cast(str, values["model_selector"]),
             reasoning_effort=cast(str, values["reasoning_effort"]),
+            execution_class=execution_class,
             thread_id=cast(str | None, values["thread_id"]),
             max_followups=max_followups,
             parallel=parallel,
@@ -132,13 +152,81 @@ class WorkerConfig:
 
 
 @dataclass(frozen=True)
+class EscalationStep:
+    """One model/effort rung in an evidence-gated escalation ladder."""
+
+    model_selector: str
+    reasoning_effort: str
+
+    @classmethod
+    def from_dict(cls, data: Any, index: int) -> EscalationStep:
+        field = f"strategy.escalation[{index}]"
+        if not isinstance(data, dict):
+            raise ConfigError(f"{field} must be an object")
+        selector = cast(str, _text(data.get("modelSelector"), f"{field}.modelSelector"))
+        effort = cast(str, _text(data.get("reasoningEffort"), f"{field}.reasoningEffort"))
+        if effort not in _EFFORTS:
+            raise ConfigError(f"{field}.reasoningEffort is not supported")
+        return cls(selector, effort)
+
+
+@dataclass(frozen=True)
+class StrategyConfig:
+    """Economic orchestration policy independent of provider model names."""
+
+    profile: str
+    default_risk: str
+    frontier_review_at: str
+    sleeping_orchestrator: bool
+    escalation: tuple[EscalationStep, ...]
+
+
+_DEFAULT_ESCALATION = (
+    EscalationStep("efficient", "xhigh"),
+    EscalationStep("balanced", "medium"),
+    EscalationStep("frontier", "low"),
+    EscalationStep("frontier", "medium"),
+)
+
+
+def _strategy(data: Any) -> StrategyConfig:
+    if data is None:
+        return StrategyConfig("economy", "R1", "R3", True, _DEFAULT_ESCALATION)
+    if not isinstance(data, dict):
+        raise ConfigError("strategy must be an object")
+    profile = cast(str, _text(data.get("profile", "economy"), "strategy.profile"))
+    if profile not in _PROFILES:
+        raise ConfigError(f"strategy.profile must be one of: {', '.join(sorted(_PROFILES))}")
+    try:
+        default_risk = validate_risk(str(data.get("defaultRisk", "R1")))
+        frontier_review_at = validate_risk(str(data.get("frontierReviewAt", "R3")))
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+    sleeping = data.get("sleepingOrchestrator", True)
+    if not isinstance(sleeping, bool):
+        raise ConfigError("strategy.sleepingOrchestrator must be a boolean")
+    raw_escalation = data.get("escalation")
+    escalation = (
+        _DEFAULT_ESCALATION
+        if raw_escalation is None
+        else tuple(
+            EscalationStep.from_dict(item, index) for index, item in enumerate(raw_escalation)
+        )
+    )
+    if not escalation:
+        raise ConfigError("strategy.escalation must not be empty")
+    return StrategyConfig(profile, default_risk, frontier_review_at, sleeping, escalation)
+
+
+@dataclass(frozen=True)
 class Roster:
-    """Validated project routing policy."""
+    """Validated project routing and economic policy."""
 
     schema_version: int
     project_name: str
     planner: RoleConfig
     reviewer: RoleConfig
+    strategy: StrategyConfig
     workers: tuple[WorkerConfig, ...]
     max_parallel_workers: int
     max_selected_workers: int
@@ -147,7 +235,11 @@ class Roster:
 
 
 def load_roster(path: str | Path) -> Roster:
-    """Load a JSON roster and reject ambiguous or duplicate entries."""
+    """Load a JSON roster and reject ambiguous or duplicate entries.
+
+    Schema v1 remains accepted for backwards compatibility. V2 adds strategy and
+    execution-class metadata while preserving the existing worker contract.
+    """
 
     roster_path = Path(path)
     try:
@@ -159,8 +251,8 @@ def load_roster(path: str | Path) -> Roster:
     if not isinstance(data, dict):
         raise ConfigError("roster must be a JSON object")
     schema_version = data.get("schemaVersion", 1)
-    if schema_version != 1:
-        raise ConfigError("schemaVersion must be 1")
+    if schema_version not in {1, 2}:
+        raise ConfigError("schemaVersion must be 1 or 2")
     project = data.get("project")
     if not isinstance(project, dict):
         raise ConfigError("project must be an object")
@@ -168,8 +260,13 @@ def load_roster(path: str | Path) -> Roster:
     defaults = data.get("defaults")
     if not isinstance(defaults, dict):
         raise ConfigError("defaults must be an object")
-    planner = RoleConfig.from_dict(defaults.get("planner"), "defaults.planner")
-    reviewer = RoleConfig.from_dict(defaults.get("reviewer"), "defaults.reviewer")
+    planner = RoleConfig.from_dict(
+        defaults.get("planner"), "defaults.planner", default_execution_class="decision"
+    )
+    reviewer = RoleConfig.from_dict(
+        defaults.get("reviewer"), "defaults.reviewer", default_execution_class="review"
+    )
+    strategy = _strategy(data.get("strategy"))
     raw_workers = data.get("workers")
     if not isinstance(raw_workers, list) or not raw_workers:
         raise ConfigError("workers must be a non-empty array")
@@ -184,9 +281,7 @@ def load_roster(path: str | Path) -> Roster:
     if not isinstance(policy, dict):
         raise ConfigError("policy must be an object")
     max_parallel = _integer(
-        policy.get("maxParallelWorkers", 2),
-        "policy.maxParallelWorkers",
-        minimum=1,
+        policy.get("maxParallelWorkers", 2), "policy.maxParallelWorkers", minimum=1
     )
     max_selected = _integer(
         policy.get("maxSelectedWorkers", min(2, len(workers))),
@@ -206,6 +301,7 @@ def load_roster(path: str | Path) -> Roster:
         project_name=cast(str, project_name),
         planner=planner,
         reviewer=reviewer,
+        strategy=strategy,
         workers=workers,
         max_parallel_workers=max_parallel,
         max_selected_workers=max_selected,

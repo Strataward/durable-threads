@@ -1,4 +1,4 @@
-"""Resolve role selectors against a live model catalog."""
+"""Resolve role selectors and route bounded work with risk-aware signals."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .config import Roster, WorkerConfig
+from .risk import RiskAssessment, classify_risk, meets_threshold
 
 
 @dataclass(frozen=True)
@@ -51,10 +52,13 @@ class RouteDecision:
     skipped: tuple[WorkerConfig, ...]
     reasons: tuple[str, ...]
     explicit: bool
+    risk: RiskAssessment
+    frontier_review_recommended: bool
 
 
 _CHANGE_SIGNAL = re.compile(
-    r"\b(add|build|change|create|debug|fix|implement|migrate|modify|refactor|remove|repair|update)\b",
+    r"\b(add|build|change|create|debug|fix|implement|migrate|modify|refactor|remove|repair|"
+    r"update)\b",
     re.IGNORECASE,
 )
 _ROLE_SIGNALS = {
@@ -81,20 +85,39 @@ def select_workers(
     acceptance: Iterable[str] = (),
     requested_workers: Iterable[str] = (),
     local_only: bool = False,
+    risk_class: str | None = None,
 ) -> RouteDecision:
     """Select only the workers that a bounded task needs.
 
-    Explicit worker names take priority. Automatic routing uses conservative
-    keyword signals. It never creates a worker and never selects more than the
-    roster policy allows.
+    Risk classification is deterministic and advisory. High-risk work can add a
+    security reviewer, while the strategy separately recommends when a frontier
+    review is warranted. Explicit worker names still take priority.
     """
+
+    allowed_paths = tuple(allowed_paths)
+    acceptance = tuple(acceptance)
+    risk = classify_risk(
+        objective=objective,
+        allowed_paths=allowed_paths,
+        acceptance=acceptance,
+        explicit=risk_class,
+        default=roster.strategy.default_risk,
+    )
+    frontier_review = meets_threshold(risk.risk_class, roster.strategy.frontier_review_at)
 
     worker_names = {worker.name: worker for worker in roster.workers}
     requested = tuple(name.strip() for name in requested_workers if name.strip())
     if local_only:
         if requested:
             raise ValueError("local work cannot select workers")
-        return RouteDecision((), roster.workers, ("keep work in the current task",), True)
+        return RouteDecision(
+            (),
+            roster.workers,
+            ("keep work in the current task",),
+            True,
+            risk,
+            frontier_review,
+        )
     if len(set(requested)) != len(requested):
         raise ValueError("requested worker names must be unique")
     unknown = [name for name in requested if name not in worker_names]
@@ -120,6 +143,8 @@ def select_workers(
             skipped=skipped,
             reasons=("explicit worker selection was requested",),
             explicit=True,
+            risk=risk,
+            frontier_review_recommended=frontier_review,
         )
 
     context = " ".join(
@@ -137,7 +162,14 @@ def select_workers(
     )
     if implementation_worker and (change_requested or not specialized):
         desired_roles.append(("implementation", "a code-change signal or no specialist signal"))
-    for role in ("security-review", "test-debug", "research-docs"):
+
+    security_worker = next(
+        (worker for worker in roster.workers if worker.role == "security-review"), None
+    )
+    if security_worker and (signals["security-review"] or meets_threshold(risk.risk_class, "R3")):
+        desired_roles.append(("security-review", f"risk {risk.risk_class} or security signal"))
+
+    for role in ("test-debug", "research-docs"):
         worker = next((item for item in roster.workers if item.role == role), None)
         if worker and _ROLE_SIGNALS[role].search(context):
             desired_roles.append((role, f"the {role} signal was detected"))
@@ -174,6 +206,8 @@ def select_workers(
         skipped=skipped,
         reasons=tuple(reasons),
         explicit=False,
+        risk=risk,
+        frontier_review_recommended=frontier_review,
     )
 
 

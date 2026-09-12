@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "durable-threads"
-version = "0.2.0"
-description = "Deterministic planning and evidence contracts for durable multi-provider thread orchestration."
+version = "0.3.0"
+description = "Risk-aware, model-economic orchestration for durable multi-provider coding threads."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Waleed Dogar" }]
-keywords = ["codex", "claude", "grok", "cursor", "agents", "orchestration", "threads", "context-management"]
+keywords = ["codex", "claude", "grok", "cursor", "agents", "orchestration", "threads", "model-routing", "context-management"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

@@ -1,21 +1,33 @@
 {
-  "schemaVersion": 1,
-  "project": {
-    "name": "multi-provider-example"
-  },
+  "schemaVersion": 2,
+  "project": { "name": "multi-provider-example" },
   "defaults": {
     "planner": {
       "provider": "codex",
       "role": "planner",
       "modelSelector": "frontier",
-      "reasoningEffort": "high"
+      "reasoningEffort": "low",
+      "executionClass": "decision"
     },
     "reviewer": {
       "provider": "codex",
       "role": "reviewer",
-      "modelSelector": "frontier",
-      "reasoningEffort": "medium"
+      "modelSelector": "efficient",
+      "reasoningEffort": "xhigh",
+      "executionClass": "review"
     }
+  },
+  "strategy": {
+    "profile": "balanced",
+    "defaultRisk": "R1",
+    "frontierReviewAt": "R3",
+    "sleepingOrchestrator": true,
+    "escalation": [
+      { "modelSelector": "efficient", "reasoningEffort": "xhigh" },
+      { "modelSelector": "balanced", "reasoningEffort": "medium" },
+      { "modelSelector": "frontier", "reasoningEffort": "low" },
+      { "modelSelector": "frontier", "reasoningEffort": "medium" }
+    ]
   },
   "policy": {
     "maxParallelWorkers": 2,
@@ -29,9 +41,10 @@
       "role": "implementation",
       "provider": "claude",
       "threadTitle": "Worker: Claude implementation",
-      "purpose": "Make bounded code changes in the allowed paths.",
+      "purpose": "Make bounded code changes from a frozen implementation contract.",
       "modelSelector": "sonnet",
-      "reasoningEffort": "low",
+      "reasoningEffort": "high",
+      "executionClass": "workhorse",
       "maxFollowups": 1,
       "parallel": false
     },
@@ -43,6 +56,7 @@
       "purpose": "Collect repository facts and update bounded documentation.",
       "modelSelector": "default",
       "reasoningEffort": "medium",
+      "executionClass": "workhorse",
       "maxFollowups": 1,
       "parallel": true
     },
@@ -51,9 +65,10 @@
       "role": "security-review",
       "provider": "cursor",
       "threadTitle": "Worker: Cursor review",
-      "purpose": "Review the diff for security and privacy regressions.",
+      "purpose": "Perform independent security and privacy review for bounded diffs.",
       "modelSelector": "default",
       "reasoningEffort": "medium",
+      "executionClass": "specialist",
       "maxFollowups": 1,
       "parallel": true
     },
@@ -64,7 +79,8 @@
       "threadTitle": "Worker: Codex integration",
       "purpose": "Review evidence and integrate bounded worker results.",
       "modelSelector": "frontier",
-      "reasoningEffort": "medium",
+      "reasoningEffort": "low",
+      "executionClass": "review",
       "maxFollowups": 1,
       "parallel": false
     }

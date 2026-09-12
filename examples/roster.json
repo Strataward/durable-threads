@@ -1,19 +1,31 @@
 {
-  "schemaVersion": 1,
-  "project": {
-    "name": "example-project"
-  },
+  "schemaVersion": 2,
+  "project": { "name": "example-project" },
   "defaults": {
     "planner": {
       "role": "planner",
       "modelSelector": "frontier",
-      "reasoningEffort": "high"
+      "reasoningEffort": "low",
+      "executionClass": "decision"
     },
     "reviewer": {
       "role": "reviewer",
-      "modelSelector": "frontier",
-      "reasoningEffort": "medium"
+      "modelSelector": "efficient",
+      "reasoningEffort": "xhigh",
+      "executionClass": "review"
     }
+  },
+  "strategy": {
+    "profile": "economy",
+    "defaultRisk": "R1",
+    "frontierReviewAt": "R3",
+    "sleepingOrchestrator": true,
+    "escalation": [
+      { "modelSelector": "efficient", "reasoningEffort": "xhigh" },
+      { "modelSelector": "balanced", "reasoningEffort": "medium" },
+      { "modelSelector": "frontier", "reasoningEffort": "low" },
+      { "modelSelector": "frontier", "reasoningEffort": "medium" }
+    ]
   },
   "policy": {
     "maxParallelWorkers": 2,
@@ -26,9 +38,10 @@
       "name": "implementation",
       "role": "implementation",
       "threadTitle": "Worker: implementation",
-      "purpose": "Make bounded code changes in the allowed paths.",
+      "purpose": "Make bounded code changes from a frozen implementation contract.",
       "modelSelector": "efficient",
-      "reasoningEffort": "low",
+      "reasoningEffort": "xhigh",
+      "executionClass": "workhorse",
       "maxFollowups": 1,
       "parallel": false
     },
@@ -37,8 +50,9 @@
       "role": "test-debug",
       "threadTitle": "Worker: test and debug",
       "purpose": "Add regression tests and diagnose focused failures.",
-      "modelSelector": "balanced",
-      "reasoningEffort": "medium",
+      "modelSelector": "efficient",
+      "reasoningEffort": "xhigh",
+      "executionClass": "workhorse",
       "maxFollowups": 1,
       "parallel": true
     },
@@ -48,7 +62,8 @@
       "threadTitle": "Worker: research and docs",
       "purpose": "Collect repository facts and update bounded documentation.",
       "modelSelector": "efficient",
-      "reasoningEffort": "low",
+      "reasoningEffort": "high",
+      "executionClass": "workhorse",
       "maxFollowups": 1,
       "parallel": true
     },
@@ -56,9 +71,10 @@
       "name": "security-review",
       "role": "security-review",
       "threadTitle": "Worker: security review",
-      "purpose": "Review the diff for security and privacy regressions.",
+      "purpose": "Review high-risk diffs for security, privacy, and destructive regressions.",
       "modelSelector": "frontier",
       "reasoningEffort": "medium",
+      "executionClass": "specialist",
       "maxFollowups": 1,
       "parallel": true
     }
