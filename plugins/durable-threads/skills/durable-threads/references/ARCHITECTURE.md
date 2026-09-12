@@ -1,6 +1,6 @@
 # Architecture
 
-Durable Threads is a provider-neutral orchestration layer for **bounded, durable engineering work**. It separates architectural decisions from sustained execution, retains named provider sessions where useful, and requires evidence before integration.
+Durable Threads is a provider-neutral orchestration layer for **bounded, durable engineering work**. It separates consequential decisions from sustained execution, retains named provider sessions where useful, and requires evidence before integration.
 
 ## Design goals
 
@@ -13,47 +13,68 @@ Durable Threads is a provider-neutral orchestration layer for **bounded, durable
 7. Make routing explainable and benchmarkable.
 8. Stay provider-neutral as model names change.
 
-## Control plane and execution plane
+## Decision plane and execution plane
 
-The planner owns scope, architecture decisions, risk classification or override, decomposition, acceptance criteria, worker selection, escalation, and integration. The control plane should be decision dense. A frontier planner should not remain active merely to watch execution progress.
+The planner owns scope, architecture decisions, risk classification or override, decomposition, acceptance criteria, worker selection, escalation, and integration. The **decision plane** should be decision-dense. A frontier planner should not remain active merely to watch execution progress.
 
-Workers own bounded implementation, focused tests, debugging, research/documentation, and specialist review. Workers receive implementation contracts, not the planner transcript.
+Workers own bounded implementation, focused tests, debugging, research/documentation, and specialist review. The **execution plane** receives implementation contracts, not the planner transcript.
 
 ## Core flow
 
 ```mermaid
-flowchart TD
-    U[User objective] --> P[Planner]
-    P --> R[Risk classify R0-R4]
-    R --> C[Freeze decisions, invariants, non-goals]
-    C --> G{Need handoff?}
-    G -->|No| L[Continue locally]
-    G -->|Yes| D[Dispatch bounded worker]
-    D --> S[Planner sleeps]
-    D --> W[Workhorse executes]
-    W --> V[Deterministic verification]
-    V -->|pass| Q{Frontier review threshold?}
-    V -->|fail| F[Focused correction]
-    F --> W
-    Q -->|No| E[Efficient review or integrate]
-    Q -->|Yes| A[Frontier/specialist review]
-    A -->|defect| F2[Workhorse correction]
+flowchart TB
+    U["User objective"] --> P
+
+    subgraph DP["Decision plane"]
+        direction TB
+        P["Plan"] --> R["Classify risk"]
+        R --> C["Freeze contract"]
+    end
+
+    C --> H{"Handoff useful?"}
+    H -->|"No"| L["Continue locally"]
+    H -->|"Yes"| W
+
+    subgraph EP["Execution plane"]
+        direction TB
+        W["Execute"] --> V["Verify"]
+        V --> Q{"Checks pass?"}
+        Q -->|"No"| F["Focused correction"]
+        F --> V
+    end
+
+    Q -->|"Yes"| G{"Review gate?"}
+    G -->|"No"| I["Integrate"]
+    G -->|"Yes"| A["Independent review"]
+    A --> D{"Defect found?"}
+    D -->|"No"| I
+    D -->|"Yes"| F2["Bounded correction"]
     F2 --> V
-    A -->|pass| I[Integrate]
-    E --> I
+    L --> I
 ```
+
+The diagram intentionally keeps each plane vertical. The contract is the boundary: decisions are made once, then sustained execution happens below that boundary.
 
 ## Sleeping orchestrator invariant
 
 When enabled, a planner must not remain in a short unchanged-state polling loop. Allowed wake conditions are worker completion, provider failure, material new evidence, user steering, or a bounded wait that genuinely requires another decision.
 
-This is disallowed:
+```mermaid
+sequenceDiagram
+    participant P as Planner
+    participant W as Worker
+    participant V as Verification
 
-```text
-wait 30s -> timed out -> sample parent -> wait 30s -> timed out -> sample parent -> ...
+    P->>W: Dispatch bounded contract
+    Note over P: Sleep
+    W->>W: Implement / debug
+    W->>V: Run required checks
+    V-->>W: Evidence
+    W-->>P: Result + compact evidence
+    Note over P: Wake only for a decision
 ```
 
-It can repeatedly reprocess a large parent context without improving the result.
+Repeated short timeouts such as `wait → timeout → resample parent → wait` are specifically what the sleeping-orchestrator policy is designed to avoid. They can repeatedly reprocess a large parent context without improving the result.
 
 ## Configuration model
 
@@ -62,6 +83,8 @@ A roster contains defaults for planner/reviewer, a model-economic strategy, name
 The strategy contains profile (`economy`, `balanced`, `frontier`), default risk, frontier-review threshold, sleeping-orchestrator setting, and an evidence-gated escalation ladder.
 
 Workers contain role, provider, thread identity, purpose, model selector, effort, execution class, correction limit, and parallel eligibility.
+
+The roster and Python helper are advanced controls. The normal plugin path does not require either one.
 
 ## Risk layer
 

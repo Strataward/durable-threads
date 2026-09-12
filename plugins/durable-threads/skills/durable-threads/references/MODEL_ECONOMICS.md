@@ -37,21 +37,17 @@ A task can afford an implementation pass, deterministic checks, a workhorse revi
 
 ## Evidence-gated escalation
 
-Default ladder:
+The default ladder is deliberately short:
 
-```text
-efficient / xhigh
-      ↓ acceptance failure after a focused correction
-balanced / medium
-      ↓ conceptual or architectural ambiguity
-frontier / low
-      ↓ unresolved difficult decision
-frontier / medium
+```mermaid
+flowchart TB
+    E["Efficient · XHigh"] -->|"repeated acceptance failure"| B["Balanced · Medium"]
+    B -->|"architecture ambiguity"| F1["Frontier · Low"]
+    F1 -->|"hard unresolved decision"| F2["Frontier · Medium"]
+    F2 -->|"exception only"| FX["Frontier · High+"]
 ```
 
-Higher frontier effort is outside the default ladder.
-
-Concrete escalation evidence includes repeated acceptance failure, missing architecture decisions, conflicting parallel tasks, cross-module invariant failures, plausible security findings, or inability to make a critical change reversible.
+Higher frontier effort is outside the normal path. Concrete escalation evidence includes repeated acceptance failure, missing architecture decisions, conflicting parallel tasks, cross-module invariant failures, plausible security findings, or inability to make a critical change reversible.
 
 Do not escalate because a task merely looks important.
 

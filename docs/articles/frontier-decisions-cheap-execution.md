@@ -15,30 +15,34 @@ A better architecture is to separate **decision work** from **execution work**.
 That principle is the basis of the current Durable Threads design.
 
 ```mermaid
-flowchart LR
-    U["User objective"] --> D
+flowchart TB
+    U["User objective"] --> P
 
-    subgraph D["Decision plane — scarce, high-leverage reasoning"]
+    subgraph DP["Decision plane"]
+        direction TB
         P["Plan architecture"] --> B["Freeze boundaries"]
         B --> I["Define invariants"]
-        I --> A["Set acceptance criteria"]
+        I --> A["Set acceptance"]
     end
 
-    A --> H["Bounded implementation contract"]
+    A --> H["Implementation contract"]
+    H --> W
 
-    subgraph E["Execution plane — sustained workhorse reasoning"]
-        W["Implement"] --> T["Run deterministic checks"]
+    subgraph EP["Execution plane"]
+        direction TB
+        W["Implement"] --> T["Verify"]
         T --> F{"Checks pass?"}
         F -->|"No"| C["Focused correction"]
         C --> T
     end
 
-    H --> W
-    F -->|"Yes"| R{"Risk or ambiguity warrants frontier review?"}
+    F -->|"Yes"| R{"Frontier review?"}
     R -->|"No"| X["Integrate"]
-    R -->|"Yes"| V["Frontier / specialist review"]
+    R -->|"Yes"| V["Independent review"]
     V --> X
 ```
+
+The contract is the boundary: make consequential decisions once, then let a workhorse own sustained execution.
 
 ## The surprising part: Luna XHigh is a serious implementation model
 
@@ -81,21 +85,20 @@ The architectural response is simple: **use a sleeping orchestrator**.
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant U as User
     participant P as Frontier planner
-    participant W as Workhorse worker
-    participant V as Deterministic verification
+    participant W as Workhorse
+    participant V as Verification
 
     U->>P: Objective
     P->>P: Make consequential decisions
-    P->>W: Dispatch bounded implementation contract
+    P->>W: Dispatch bounded contract
     Note over P: Sleep — no status polling
     W->>W: Implement and debug
-    W->>V: Run tests / typecheck / lint / CI
+    W->>V: Run required checks
     V-->>W: Evidence
-    W-->>P: Completion + compact evidence
-    P->>P: Wake only for review, ambiguity, or escalation
+    W-->>P: Result + compact evidence
+    Note over P: Wake only for another decision
     P-->>U: Integrated result
 ```
 
@@ -124,40 +127,25 @@ Durable Threads uses five consequence classes:
 A useful Plus-oriented default is efficient execution across all classes, with stronger planning/review as risk increases. R3/R4 are where frontier review earns its cost.
 
 ```mermaid
-flowchart LR
-    R0["R0 · Mechanical"] --> R1["R1 · Bounded"] --> R2["R2 · Integration"] --> R3["R3 · Critical"] --> R4["R4 · Systemic"]
-
-    R0 -.-> E0["Machine checks"]
-    R1 -.-> E1["Efficient review when useful"]
-    R2 -.-> E2["Integration review"]
-    R3 -.-> E3["Frontier / specialist review"]
-    R4 -.-> E4["Frontier architecture + review"]
+flowchart TB
+    R0["R0 · Mechanical<br/>machine checks"] --> R1["R1 · Bounded<br/>efficient workhorse"]
+    R1 --> R2["R2 · Integration<br/>integration review"]
+    R2 --> R3["R3 · Critical<br/>frontier / specialist review"]
+    R3 --> R4["R4 · Systemic<br/>frontier architecture + review"]
 ```
 
 The exact model names will change. The architecture should not. That is why Durable Threads stores provider-neutral roles such as `efficient`, `balanced`, and `frontier` and resolves them against live model catalogs when possible.
 
 ## Escalate on evidence, not prestige
 
-The economic escalation ladder is:
+The economic escalation ladder should stay short:
 
 ```mermaid
-flowchart TD
-    L["Luna XHigh<br/>default workhorse"] --> Q1{"Acceptance failed?"}
-    Q1 -->|"No"| DONE["Done"]
-    Q1 -->|"Yes"| FIX["Improve packet or make a focused correction"]
-    FIX --> L2["Luna XHigh retry"]
-    L2 --> Q2{"Same conceptual failure?"}
-    Q2 -->|"No"| DONE
-    Q2 -->|"Yes"| S["Sol Medium"]
-    S --> Q3{"Architecture ambiguity remains?"}
-    Q3 -->|"No"| DONE
-    Q3 -->|"Yes"| A1["Astra Low"]
-    A1 --> Q4{"Genuinely difficult decision unresolved?"}
-    Q4 -->|"No"| DONE
-    Q4 -->|"Yes"| A2["Astra Medium"]
-    A2 --> Q5{"Exceptional case with evidence for more effort?"}
-    Q5 -->|"No"| DONE
-    Q5 -->|"Yes"| AX["Astra High / XHigh / Max"]
+flowchart TB
+    L["Efficient · XHigh"] -->|"repeated acceptance failure"| S["Balanced · Medium"]
+    S -->|"architecture ambiguity"| A1["Frontier · Low"]
+    A1 -->|"hard unresolved decision"| A2["Frontier · Medium"]
+    A2 -->|"exception only"| AX["Frontier · High+"]
 ```
 
 Escalation is triggered by **failure evidence**: failed tests, repeated invariant violations, discovered shared state, or plausible security findings. "This task looks important" is not evidence that every token should be frontier-priced.
@@ -167,15 +155,15 @@ Escalation is triggered by **failure evidence**: failed tests, repeated invarian
 If correctness can be checked with a compiler, type checker, unit test, integration test, schema validator, static analyzer, migration check, or CI workflow, use that machinery before paying another model to reason about the same property.
 
 ```mermaid
-flowchart TD
-    W["Workhorse implements"] --> D["Deterministic checks<br/>tests · types · lint · schema · CI"]
-    D --> P{"All required checks pass?"}
-    P -->|"No"| C["Focused worker correction<br/>name the failed check + violated invariant"]
+flowchart TB
+    W["Workhorse implements"] --> D["Deterministic checks"]
+    D --> P{"Pass?"}
+    P -->|"No"| C["Focused correction"]
     C --> D
-    P -->|"Yes"| G{"Risk gate"}
+    P -->|"Yes"| G{"Review gate"}
     G -->|"R0–R1"| I["Integrate"]
     G -->|"R2"| R["Integration review"]
-    G -->|"R3–R4"| F["Independent frontier / specialist review"]
+    G -->|"R3–R4"| F["Frontier / specialist review"]
     R --> I
     F --> I
 ```
@@ -189,22 +177,21 @@ Persistent sessions are useful when retained context is relevant. They are harmf
 ## The workflow I use on Plus
 
 ```mermaid
-flowchart TD
-    U["Feature / bug / refactor"] --> P["Astra Low or Sol Medium<br/>plan + freeze decisions"]
-    P --> C["Implementation contract<br/>objective · decisions · invariants · non-goals · acceptance"]
-    C --> L1["Luna XHigh<br/>implementation"]
-    L1 --> M["Deterministic checks"]
-    M --> OK{"Checks pass?"}
-    OK -->|"No"| LC["Luna XHigh<br/>focused correction"]
-    LC --> M
-    OK -->|"Yes"| LR["Luna XHigh<br/>first-line review"]
-    LR --> R{"High-risk, ambiguous, or repeated failure?"}
-    R -->|"No"| DONE["Integrate / done"]
-    R -->|"Yes"| A["Astra Low / Medium<br/>consequential review"]
-    A --> AF{"Correction required?"}
-    AF -->|"No"| DONE
-    AF -->|"Yes"| L2["Luna XHigh<br/>bounded correction"]
-    L2 --> M
+flowchart TB
+    U["Feature / bug / refactor"] --> P["Decision plane<br/>Astra Low or Sol Medium"]
+    P --> C["Implementation contract"]
+    C --> L["Execution plane<br/>Luna XHigh"]
+    L --> V["Deterministic checks"]
+    V --> Q{"Pass?"}
+    Q -->|"No"| F["Focused Luna correction"]
+    F --> V
+    Q -->|"Yes"| R{"Critical / ambiguous?"}
+    R -->|"No"| D["Integrate"]
+    R -->|"Yes"| A["Astra Low / Medium review"]
+    A --> X{"Correction required?"}
+    X -->|"No"| D
+    X -->|"Yes"| F2["Bounded Luna correction"]
+    F2 --> V
 ```
 
 Fast mode stays off when allowance longevity matters. Parallel workers are limited to independent tasks. The orchestrator sleeps while workers execute. Frontier reasoning is reintroduced at architectural and risk boundaries rather than kept permanently in the loop.

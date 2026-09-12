@@ -34,22 +34,28 @@ That is the complete basic setup.
 
 ## What it does by default
 
-Durable Threads applies a simple policy without asking you to configure workers first:
+Durable Threads applies one compact workflow without asking you to configure workers first:
 
-```text
-user objective
-    ↓
-plan only as deeply as needed
-    ↓
-freeze decisions + invariants + acceptance
-    ↓
-efficient high-reasoning implementation
-    ↓
-tests / typecheck / lint / CI
-    ↓
-risk gate
-    ├─ ordinary + passing → integrate
-    └─ critical / ambiguous → stronger review or escalation
+```mermaid
+flowchart TB
+    U["Objective"] --> P
+
+    subgraph DP["Decision plane"]
+        direction TB
+        P["Plan"] --> C["Freeze contract"]
+    end
+
+    C --> W
+
+    subgraph EP["Execution plane"]
+        direction TB
+        W["Implement"] --> V["Verify"]
+    end
+
+    V --> G{"Risk or ambiguity?"}
+    G -->|"Ordinary"| I["Integrate"]
+    G -->|"Critical / ambiguous"| R["Stronger review"]
+    R --> I
 ```
 
 The planner should sleep while healthy workers execute instead of repeatedly spending expensive parent turns polling status.

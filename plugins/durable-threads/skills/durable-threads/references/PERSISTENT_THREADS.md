@@ -8,6 +8,23 @@ Durable Threads preserves stable worker identity, provider, provider session ID,
 
 A useful persistent worker can retain provider-local context without forcing the planner to replay a large transcript. Persistence is economically useful only while retained context remains relevant.
 
+## Lifecycle
+
+```mermaid
+flowchart TB
+    R["Resolve exact worker"] --> S["Send bounded packet"]
+    S --> W["Sleep while worker runs"]
+    W --> E{"Result?"}
+    E -->|"Accepted"| I["Record evidence"]
+    I --> N["Idle · ready for next objective"]
+    E -->|"Failed"| C{"Concrete correction?"}
+    C -->|"Yes"| F["Send focused correction"]
+    F --> W
+    C -->|"No"| X["Stop · classify recovery state"]
+```
+
+Durability is about stable identity and useful retained context, not keeping every worker alive forever.
+
 ## Resolve
 
 1. List current provider tasks/sessions.

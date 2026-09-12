@@ -4,6 +4,18 @@ Durable Threads separates **task difficulty** from **task consequence**. A mecha
 
 Risk controls how much independent reasoning and review the workflow buys.
 
+## Risk ladder
+
+```mermaid
+flowchart TB
+    R0["R0 · Mechanical<br/>deterministic checks"] --> R1["R1 · Bounded<br/>efficient workhorse"]
+    R1 --> R2["R2 · Integration<br/>integration review"]
+    R2 --> R3["R3 · Critical<br/>frontier / specialist review"]
+    R3 --> R4["R4 · Systemic<br/>frontier architecture + review"]
+```
+
+Higher risk means stronger independent review by default. It does **not** automatically mean the implementation worker must be a frontier model.
+
 ## Risk classes
 
 ### R0 — mechanical

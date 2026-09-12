@@ -2,6 +2,15 @@
 
 Durable Threads uses progressive disclosure. Start with zero project configuration and add policy only when it solves a real problem.
 
+```mermaid
+flowchart TB
+    L0["Level 0 · Defaults<br/>install + use"] --> L1["Level 1 · Task override<br/>prompt only"]
+    L1 --> L2["Level 2 · Repository policy<br/>AGENTS.md"]
+    L2 --> L3["Level 3 · Advanced orchestration<br/>roster + helper"]
+```
+
+Most users should remain at Level 0 or Level 1.
+
 ## Level 0 — use the defaults
 
 Install the plugin and ask it to do the work.
@@ -77,12 +86,12 @@ If the runtime exposes a live catalog, resolve against it. Do not bake a tempora
 
 ## Review policy
 
-A useful default is:
-
-```text
-R0/R1 → deterministic checks; lightweight review only when useful
-R2    → integration-focused review
-R3/R4 → independent specialist/frontier review
+```mermaid
+flowchart TB
+    R["Risk class"] --> G{"Which tier?"}
+    G -->|"R0–R1"| D["Deterministic checks"]
+    G -->|"R2"| I["Integration review"]
+    G -->|"R3–R4"| F["Frontier / specialist review"]
 ```
 
 Override risk explicitly when repository facts are stronger than keyword classification.
