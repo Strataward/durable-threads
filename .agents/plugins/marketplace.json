@@ -1,0 +1,20 @@
+{
+  "name": "strataward",
+  "interface": {
+    "displayName": "Strataward"
+  },
+  "plugins": [
+    {
+      "name": "durable-threads",
+      "source": {
+        "source": "local",
+        "path": "./plugins/durable-threads"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -19,7 +19,11 @@ EXCLUDED_PARTS = {
 
 
 def build(root: Path, output: Path) -> Path:
-    manifest = json.loads((root / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (root / "plugins" / "durable-threads" / ".codex-plugin" / "plugin.json").read_text(
+            encoding="utf-8"
+        )
+    )
     name = manifest["name"]
     version = manifest["version"]
     output.mkdir(parents=True, exist_ok=True)

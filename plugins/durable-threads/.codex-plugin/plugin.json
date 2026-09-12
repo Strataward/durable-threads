@@ -1,0 +1,35 @@
+{
+  "name": "durable-threads",
+  "version": "0.4.0",
+  "description": "Frontier decisions, efficient execution, deterministic verification, and evidence-gated escalation for coding work.",
+  "author": {
+    "name": "Waleed Dogar",
+    "url": "https://github.com/waleeddogar"
+  },
+  "homepage": "https://github.com/Strataward/durable-threads",
+  "repository": "https://github.com/Strataward/durable-threads",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "coding",
+    "agents",
+    "orchestration",
+    "model-routing",
+    "software-engineering"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Durable Threads",
+    "shortDescription": "Frontier decisions, workhorse execution",
+    "longDescription": "Coordinate coding work with efficient high-reasoning workers, risk-aware review, deterministic verification, sleeping orchestration, and evidence-gated escalation.",
+    "developerName": "Waleed Dogar",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Use Durable Threads to implement this efficiently.",
+      "Plan with a strong model and route implementation economically.",
+      "Review this change with risk-aware verification."
+    ],
+    "brandColor": "#4F46E5"
+  }
+}

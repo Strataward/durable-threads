@@ -30,11 +30,11 @@ jobs:
         run: ruff check .
       - name: Compile sources
         run: python -m compileall -q src scripts
-      - name: Validate repository files
+      - name: Validate repository packaging
         run: python scripts/validate_repo.py
 
   package:
-    name: Plugin package
+    name: Release archive
     runs-on: ubuntu-latest
     needs: test
     steps:
