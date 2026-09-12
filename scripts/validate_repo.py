@@ -42,7 +42,10 @@ def _validate_markdown(root: Path) -> None:
         require("[TODO" not in visible, f"unfinished TODO placeholder in {rel}")
         require(
             not re.search(r"(?m)^\s*\$\$\s*$", visible),
-            f"unsupported block-math delimiter in {rel}; use GitHub-safe prose or a code/math surface",
+            (
+                f"unsupported block-math delimiter in {rel}; "
+                "use GitHub-safe prose or a supported rendering surface"
+            ),
         )
 
         for raw_target in link_re.findall(visible):
@@ -55,15 +58,15 @@ def _validate_markdown(root: Path) -> None:
             target = unquote(target.split("#", 1)[0].split("?", 1)[0])
             if not target:
                 continue
-            destination = (
-                (root / target.lstrip("/")).resolve()
-                if target.startswith("/")
-                else (path.parent / target).resolve()
-            )
+            if target.startswith("/"):
+                destination = (root / target.lstrip("/")).resolve()
+            else:
+                destination = (path.parent / target).resolve()
             try:
                 destination.relative_to(root.resolve())
             except ValueError as exc:
-                raise RuntimeError(f"Markdown link escapes repository in {rel}: {raw_target}") from exc
+                message = f"Markdown link escapes repository in {rel}: {raw_target}"
+                raise RuntimeError(message) from exc
             require(destination.exists(), f"broken local Markdown link in {rel}: {raw_target}")
 
 
