@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 RISK_LEVELS = ("R0", "R1", "R2", "R3", "R4")
 _RISK_RANK = {risk: index for index, risk in enumerate(RISK_LEVELS)}
