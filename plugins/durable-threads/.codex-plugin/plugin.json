@@ -1,7 +1,7 @@
 {
   "name": "durable-threads",
-  "version": "0.4.0",
-  "description": "Frontier decisions, efficient execution, deterministic verification, and evidence-gated escalation for coding work.",
+  "version": "0.5.0",
+  "description": "Risk- and cost-aware policy for native Codex subagents, deterministic verification, and evidence-gated escalation.",
   "author": {
     "name": "Waleed Dogar",
     "url": "https://github.com/waleeddogar"
@@ -13,6 +13,7 @@
     "codex",
     "coding",
     "agents",
+    "multi-agent",
     "orchestration",
     "model-routing",
     "software-engineering"
@@ -20,15 +21,15 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Durable Threads",
-    "shortDescription": "Frontier decisions, workhorse execution",
-    "longDescription": "Coordinate coding work with efficient high-reasoning workers, risk-aware review, deterministic verification, sleeping orchestration, and evidence-gated escalation.",
+    "shortDescription": "Policy for native multi-agent coding",
+    "longDescription": "Use native Codex subagents efficiently with risk-aware delegation, bounded implementation contracts, safe parallelism, deterministic verification, and evidence-gated model escalation.",
     "developerName": "Waleed Dogar",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [
-      "Use Durable Threads to implement this efficiently.",
-      "Plan with a strong model and route implementation economically.",
-      "Review this change with risk-aware verification."
+      "Use Durable Threads and native Codex subagents to implement this efficiently.",
+      "Plan with a strong model, delegate bounded execution economically, and verify deterministically.",
+      "Review this change with risk-aware native multi-agent verification."
     ],
     "brandColor": "#4F46E5"
   }
