@@ -1,64 +1,70 @@
 # Persistent thread lifecycle
 
-## What durable means
+## What durable means now
 
-Durable Threads preserves stable worker identity, provider, provider session ID, task status, compact evidence, and usage counters when available. It does **not** promise provider-process recovery after quota failure, crashes, or unknown writer state.
+Durability is no longer the primary differentiator on modern Codex because the host runtime already owns native subagent/session lifecycle. Durable Threads uses persistence as an **economic context primitive**: retain useful child identity and evidence when that saves rediscovery, but do not keep agents alive merely for the sake of continuity.
 
-## Why persistence matters
+For external providers, Durable Threads can still preserve provider session IDs and bounded ledger state. For native Codex, prefer the runtime's own child/session mechanisms.
 
-A useful persistent worker can retain provider-local context without forcing the planner to replay a large transcript. That is economically useful only while the retained context remains relevant.
+## Why persistence still matters
+
+A useful child can retain local context without forcing the planner to replay a large transcript. That is valuable only while the retained context remains relevant and trustworthy.
 
 ## Lifecycle
 
 ```mermaid
 flowchart LR
-    R["Resolve exact worker"] --> S["Send bounded contract"] --> W["Sleep while it runs"] --> E{"Result"}
+    R["Resolve useful child / role"] --> S["Send bounded contract"] --> W["Native wait / sleep"] --> E{"Result"}
     E -->|"Accepted"| I["Record evidence"] --> N["Idle / reusable"]
     E -->|"Failed"| C{"Concrete correction?"}
     C -->|"Yes"| F["Focused correction"] --> W
     C -->|"No"| X["Stop + classify state"]
 ```
 
-Durability is stable identity plus useful context—not keeping every worker alive forever.
+Durability means stable identity plus useful context—not keeping every worker alive forever.
 
 ## Resolve
 
-1. List current provider tasks/sessions.
-2. Match the exact worker title and provider.
-3. Confirm the project directory and idle/finished state.
-4. Confirm the worker's purpose still matches the new contract.
-5. Reuse the session only if retained context is still useful.
-6. Ask before creating a new provider task when policy requires authorization.
+For native Codex, prefer the runtime's existing child/session identity. For external providers, match the exact provider/session ID and working directory.
 
-Never treat a merely similar title as the same worker.
+Reuse only when:
+
+1. the prior child is idle/finished;
+2. its purpose still matches the new objective;
+3. retained context is more useful than a fresh bounded child;
+4. there is no ambiguity about prior writes or state.
 
 ## Send
 
-Send one bounded contract with a new run ID for new work. Include objective, risk, frozen decisions, invariants, non-goals, allowed paths, acceptance, constraints, and result contract. Do not send the planner transcript by default.
+Send one bounded contract with a new run ID for new work. Include objective, risk, frozen decisions, invariants, non-goals, ownership/allowed paths, acceptance, constraints, and result contract. Do not send the planner transcript by default.
 
 ## Wait
 
-The orchestrator should sleep while the worker runs. Prefer event-driven completion when the provider supports it. Avoid short repeated timeouts or transcript rereads that return the parent model to unchanged state.
+Use native event/wait semantics when available. The planner should sleep while the child runs and wake on completion, failure, user steering, or material evidence. Avoid short repeated timeouts or transcript rereads that return the parent model to unchanged state.
 
 ## Resume
 
-Resume for a focused correction only when provider metadata is valid, resume is supported, the failure is concrete, and the correction count remains within policy. Name the failed check and violated invariant; do not resend the full original packet unless material facts changed.
+Resume for a focused correction only when the failure is concrete and the correction count remains within policy. Name the failed check and violated invariant. Do not resend the full packet unless material facts changed.
 
 ## New objective vs correction
 
-A distinct objective can reuse an idle worker with a new task record. A correction repairs the same acceptance failure. Do not rotate IDs to bypass retry policy.
+A distinct objective can reuse an idle child when retained context is still relevant. A correction repairs the same acceptance failure. Do not rotate IDs or child identities merely to bypass retry policy.
 
 ## Recovery states
 
 | State | Action |
 | --- | --- |
-| idle/finished | send a new bounded objective |
+| idle/finished | reuse only if retained context is useful |
 | active writer | wait for material state change |
 | usage limit | record stop; wait for reset or declared fallback |
-| missing provider metadata | do not resume blindly |
-| provider failure | classify before retry |
-| unknown status | inspect once, then stop writes until resolved |
+| missing provider/session metadata | do not resume blindly |
+| provider/runtime failure | classify before retry |
+| unknown writer state | stop new writes until resolved |
+
+## Worktrees and durability
+
+A durable worker identity and an isolated worktree solve different problems. Identity preserves useful context; a worktree isolates mutations. For independent parallel writers, prefer both when available: stable task ownership plus isolated checkout. Overlapping writers should still be serialized.
 
 ## Retirement
 
-Retire or archive a worker only when requested or when policy defines retirement. Preserve redacted ledger history so routing evaluations remain auditable.
+Retire or archive a child when its retained context has become stale, its objective class changed materially, or policy defines retirement. Preserve redacted evidence/benchmark history where useful for routing evaluation.
