@@ -1,19 +1,41 @@
 # Provider adapters
 
-The optional Python helper can render and dispatch bounded calls to several coding-agent CLIs. Each provider remains its own session system; Durable Threads does not pretend their lifecycle semantics are identical.
+Durable Threads prefers the host's native agent runtime when it is capable enough. On current Codex, that means native subagents should be the default execution path for normal interactive work.
+
+The optional Python helper still supports provider-neutral planning and bounded calls to other coding-agent CLIs. Each provider remains its own session system; Durable Threads does not pretend their lifecycle semantics are identical.
 
 Adapters build argument arrays rather than shell strings. They do not check credentials or silently weaken provider permission controls.
 
 ## Capability matrix
 
-| Provider | Local entry point | Session reuse | Structured output | Effort control |
+| Provider/runtime | Preferred integration | Session reuse | Multi-agent / isolation | Effort control |
 | --- | --- | --- | --- | --- |
-| Codex | native Codex task actions | native task/session identity | native result | native runtime |
-| Claude Code | `claude` | `--resume` / `--continue` | `--output-format json` | `--effort` |
-| Grok Build | `grok` | `--resume` / session IDs | `--output-format json` | `--effort` |
-| Cursor Agent | `agent` (legacy `cursor-agent`) | `--resume` | `--output-format json` | adapter does not set it |
+| Codex | native subagents and project agent roles | native task/session identity | native agents; worktrees for isolated writers when supported | native runtime |
+| OpenAI Agents API | optional managed/headless backend | managed sessions | managed subagents with concurrency cap | API agent reasoning config |
+| Claude Code | CLI adapter | `--resume` / `--continue` | provider-specific | `--effort` |
+| Grok Build | CLI adapter | `--resume` / session IDs | provider-specific | `--effort` |
+| Cursor Agent | CLI adapter | `--resume` | provider-specific | adapter does not set it |
 
-Provider installation and authentication are out of scope. Configure the provider with its own login/environment mechanism before dispatch.
+Provider installation and authentication are out of scope. Configure an external provider with its own login/environment mechanism before dispatch.
+
+## Codex — preferred native runtime
+
+Do not launch a second Codex process just to emulate workers that native Codex can already represent. Use the host's native child lifecycle and map Durable Threads policy onto it:
+
+- `explorer` for specific codebase questions and read-heavy discovery;
+- `worker` for bounded implementation, debugging, and test work;
+- project-defined read-only roles for stable reviewer/security behavior when useful;
+- native wait/resume instead of repeated parent polling;
+- worktrees for independent parallel writers when supported;
+- serialization for overlapping writers.
+
+The optional helper's `durable_threads.native` module exposes provider-neutral execution hints but intentionally does not spawn Codex.
+
+## OpenAI Agents API — optional managed backend
+
+The Agents API exposes the managed Codex harness for cloud/headless use and supports multi-agent configuration with a concurrency cap. Durable Threads does not require it for ordinary plugin use.
+
+A future managed adapter should preserve the same policy boundary: Durable Threads chooses delegation/risk/model economics; the API owns session lifecycle, subagent execution, and platform telemetry.
 
 ## Claude Code
 
@@ -39,12 +61,7 @@ durable-threads provider-command \
   --prompt "Run the focused tests and report changed paths and exact results."
 ```
 
-When a provider session ID is supplied, the adapter emits `--resume`. It does **not** emit `--dangerously-skip-permissions`.
-
-Official references:
-
-- https://code.claude.com/docs/en/cli-usage
-- https://code.claude.com/docs/en/headless
+When a provider session ID is supplied, the adapter emits `--resume`. It does **not** emit unsafe permission-bypass flags.
 
 ## Grok Build
 
@@ -62,15 +79,6 @@ durable-threads provider-command \
   --prompt "Review the current diff for one concrete regression."
 ```
 
-Grok Build also exposes ACP via `grok agent stdio`. The current helper uses the documented headless CLI because it is simpler for bounded scripted work; an ACP integration would make sense for hosts that need live session events and permission decisions.
-
-Official references:
-
-- https://docs.x.ai/build/overview
-- https://docs.x.ai/build/cli/headless-scripting
-- https://docs.x.ai/build/cli/reference
-- https://docs.x.ai/build/settings
-
 ## Cursor Agent
 
 Current Cursor CLI installations use `agent`; older environments may still expose `cursor-agent`. The adapter checks both and allows an explicit `--binary` override.
@@ -86,17 +94,9 @@ durable-threads provider-command \
   --prompt "Review the current diff and report only actionable findings."
 ```
 
-Cursor also exposes ACP through `agent acp`. ACP is the better integration point when a host needs live events, session methods, or interactive permission handling; the current adapter intentionally stays with the simpler headless CLI contract.
-
-Official references:
-
-- https://cursor.com/docs/cli/overview
-- https://cursor.com/docs/cli/reference/parameters
-- https://cursor.com/docs/cli/acp
-
 ## Rendering and dispatch
 
-Render a provider command without running it:
+Render an external-provider command without running it:
 
 ```bash
 durable-threads provider-command \
@@ -106,7 +106,7 @@ durable-threads provider-command \
   --prompt "Complete the bounded task."
 ```
 
-Run one provider call only when that external execution is authorized:
+Run one external provider call only when that execution is intentionally selected:
 
 ```bash
 durable-threads dispatch \
@@ -117,9 +117,9 @@ durable-threads dispatch \
   --prompt "Complete the bounded task."
 ```
 
-`dispatch` uses an argument array, captures bounded output, extracts a session ID and common usage counters when the provider emits them, and can record redacted start/finish state in the ledger. With a ledger/task ID, it also guards against a second local writer and provider/session identity drift during a follow-up.
+`dispatch` uses an argument array, captures bounded output, extracts a session ID and common usage counters when the provider emits them, and can record redacted start/finish state in the ledger.
 
-Codex is the deliberate exception: the helper returns a native-app action description rather than launching a Codex task. Use native Codex task actions for list/send/wait/read and provider-side writer checks.
+Codex remains the deliberate exception: the helper returns a native-app action description rather than launching Codex as a subprocess.
 
 ## Session IDs
 
