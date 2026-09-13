@@ -1,25 +1,33 @@
 # Architecture
 
-Durable Threads is a provider-neutral control layer for **bounded engineering work**. It separates consequential decisions from sustained execution, preserves useful worker identity, and requires evidence before integration.
+Durable Threads is a provider-neutral **policy layer** for bounded engineering work. It separates consequential decisions from sustained execution, preserves useful worker identity, and requires evidence before integration.
 
-The architecture is intentionally small: a decision plane creates a bounded contract; an execution plane owns the work; deterministic checks establish what machines can establish; independent review is added when consequence or ambiguity justifies it.
+On current Codex, the preferred execution substrate is the host's native multi-agent runtime. Durable Threads owns the policy around delegation; Codex owns native subagent lifecycle.
 
 ## Design goals
 
 1. Spend frontier-model capacity where it changes an important decision.
 2. Keep sustained implementation on a capable workhorse when acceptance is well defined.
-3. Prevent expensive parent agents from burning turns while merely waiting.
+3. Prefer native subagent lifecycle and waiting when the host supports them.
 4. Preserve useful worker context without replaying entire planner transcripts.
-5. Bound fan-out, retries, and write scopes.
-6. Prefer deterministic evidence over model confidence.
-7. Keep routing explainable and benchmarkable.
-8. Stay provider-neutral as model catalogs change.
+5. Bound fan-out, retries, and write ownership.
+6. Separate parallel cognition from parallel mutation.
+7. Prefer deterministic evidence over model confidence.
+8. Keep routing explainable, benchmarkable, and provider-neutral.
 
-## Decision plane and execution plane
+## Three layers
 
-The **decision plane** owns scope, architecture, consequence classification, decomposition, acceptance criteria, worker selection, escalation, and integration. It should be decision-dense: a frontier planner should not remain active just to watch a worker make progress.
+### Policy plane
 
-The **execution plane** owns bounded implementation, focused debugging, local checks, research/documentation, and specialist tasks. Workers receive implementation contracts rather than the planner's full conversation.
+Durable Threads owns scope, architecture, consequence classification, decomposition, acceptance criteria, worker selection, model/effort policy, isolation policy, escalation, and integration. The planner should be decision-dense rather than remain active merely to observe progress.
+
+### Runtime plane
+
+The runtime executes the policy. In native Codex this includes subagent spawn, role application, waiting/resume behavior, sandboxing, shared project state, and worktree/session mechanics. External provider adapters remain available when intentionally requested.
+
+### Verification plane
+
+Deterministic checks establish what machines can establish before model review: compiler/type checker, focused tests, integration tests, schema/migration validation, lint/static analysis, and CI. Independent review is added when consequence or ambiguity justifies it.
 
 ## Core flow
 
@@ -27,62 +35,78 @@ The **execution plane** owns bounded implementation, focused debugging, local ch
 flowchart LR
     U["User objective"] --> DP
 
-    subgraph DP["Decision plane"]
+    subgraph DP["Policy plane"]
         direction TB
-        P["Plan"] --> R["Classify consequence"]
+        H{"Handoff useful?"} --> R["Classify R0-R4"]
         R --> C["Freeze contract"]
-        C --> H{"Handoff useful?"}
+        C --> M["Choose role / model / effort"]
+        M --> I["Choose isolation / fan-out"]
     end
 
     H -->|"No"| L["Continue locally"]
-    H -->|"Yes"| EP
+    I --> RT
 
-    subgraph EP["Execution plane"]
+    subgraph RT["Runtime plane"]
         direction TB
-        W["Execute"] --> V["Verify"]
-        V --> Q{"Pass?"}
-        Q -->|"No"| F["Focused correction"]
-        F --> V
+        E["Native explorer"]
+        W["Native worker"]
+        Q["Reviewer / specialist"]
     end
 
-    Q -->|"Yes"| G{"Review gate?"}
-    G -->|"No"| I["Integrate"]
-    G -->|"Yes"| A["Independent review"]
-    A --> D{"Defect?"}
-    D -->|"No"| I
-    D -->|"Yes"| F2["Bounded correction"]
-    F2 --> V
-    L --> I
+    RT --> V["Deterministic verification"]
+    V --> G{"Pass + risk gate?"}
+    G -->|"Yes"| X["Integrate"]
+    G -->|"No"| F["Focused correction / escalation"]
+    F --> RT
+    L --> X
 ```
 
-The outer flow is left-to-right; the planes are internally top-to-bottom. This keeps the architecture readable without turning each plane into a wide chain.
+## Native Codex mapping
+
+Current Codex provides built-in `explorer` and `worker` roles. Durable Threads maps read-heavy codebase discovery to `explorer` and bounded implementation/debugging to `worker`. Review can use a project-defined read-only role when available; otherwise the default agent can receive an independent review contract.
+
+The runtime should own native child lifecycle. Durable Threads should own **why a child exists, what it owns, and how its result will be accepted**.
 
 ## Sleeping orchestrator invariant
 
-When enabled, the planner must not sit in a short unchanged-state polling loop. Valid wake conditions are worker completion, provider failure, material new evidence, user steering, or a wait boundary that genuinely requires another decision.
+The planner must not sit in a short unchanged-state polling loop. On a capable native runtime, use its wait/notification lifecycle. Valid wake conditions are child completion, runtime failure, material new evidence, user steering, or a new consequential decision.
 
 ```mermaid
 sequenceDiagram
     participant P as Planner
+    participant R as Native runtime
     participant W as Worker
     participant V as Verification
 
-    P->>W: Dispatch bounded contract
+    P->>R: Spawn bounded contract
+    R->>W: Execute
     Note over P: Sleep
-    W->>W: Implement / debug
     W->>V: Run required checks
     V-->>W: Evidence
-    W-->>P: Result + compact evidence
+    W-->>R: Result + compact evidence
+    R-->>P: Completion event
     Note over P: Wake because a decision is needed
 ```
 
-Repeated loops such as `wait → timeout → resample parent → wait` are exactly what this rule is designed to avoid. They can repeatedly re-enter a large parent context without producing new evidence.
+Repeated loops such as `wait -> timeout -> resample parent -> wait` are a policy failure when no new evidence is produced.
+
+## Parallelism and workspace isolation
+
+Use this rule:
+
+> **Subagents for parallel cognition. Worktrees for parallel mutation.**
+
+Read-only explorers and reviewers can usually share a checkout. One writer can use the shared checkout. Multiple independent writers should use isolated worktrees when supported and only when ownership is genuinely disjoint. Overlapping writers should be serialized.
+
+Worktrees are an isolation primitive, not a proof of semantic independence.
 
 ## Configuration model
 
 The normal plugin workflow does **not** require a roster or the Python helper.
 
-For advanced use, a roster can define planner/reviewer defaults, a model-economic strategy, named workers, and safety limits. A strategy can include profile (`economy`, `balanced`, `frontier`), default risk, a frontier-review threshold, sleeping-orchestrator policy, and an escalation ladder. Worker records can include provider/session identity, role, model selector, reasoning effort, execution class, retry limit, and parallel eligibility.
+Current Codex exposes native agent controls such as a concurrency cap and default subagent model/reasoning settings. Durable Threads treats those as runtime controls. Project-defined native agent roles can live under `.codex/agents/` when stable specialist behavior is useful.
+
+For advanced provider-neutral use, a roster can still define planner/reviewer defaults, model-economic strategy, named workers, and safety limits.
 
 ## Risk layer
 
@@ -92,7 +116,7 @@ See `RISK_ROUTING.md`.
 
 ## Packet layer
 
-A worker packet contains the objective, consequence class, execution class, decisions already made, invariants, non-goals, allowed paths, acceptance checks, constraints, result contract, model/effort policy, and correction limit. It deliberately excludes a full transcript.
+A worker packet contains the objective, consequence class, execution class, decisions already made, invariants, non-goals, allowed paths/ownership, acceptance checks, constraints, result contract, model/effort policy, and correction limit. It deliberately excludes a full transcript.
 
 See `PACKET_CONTRACT.md`.
 
@@ -102,22 +126,18 @@ A complete result identifies changed paths, exact checks and outcomes, and remai
 
 ## Session layer
 
-Durability means retaining provider identity and compact evidence while that context remains useful. It does not guarantee remote-process recovery after quota failure, crashes, or unknown writer state. Session IDs are local state and should not be committed.
+Durability means retaining useful runtime/session identity and compact evidence while that context remains useful. It does not require Durable Threads to replace host-native session management. External provider session IDs remain local state and should not be committed.
 
-## Failure model
+## Managed API boundary
 
-Hard stops include quota exhaustion, authentication failure, unknown writer state, session drift, exhausted corrections, path-scope violations, and unresolved ambiguity that invalidates the contract.
-
-Do not rotate task IDs or provider sessions merely to bypass a stop.
+The OpenAI Agents API is a natural optional backend for headless, CI, SaaS, or automated execution because it exposes the Codex harness and multi-agent coordination. Normal plugin use should remain native and zero-config; an API key should not become a prerequisite simply because a managed backend exists.
 
 ## Provider neutrality
 
-Codex can resolve `efficient`, `balanced`, and `frontier` against live model metadata. Other adapters use stable aliases only where the provider exposes them. The router must not invent model names.
-
-## Security boundary
-
-The packet allow-list is an instruction, not an OS sandbox. Inspect the actual diff. Push, merge, deploy, publish, account creation, and production changes require explicit user authorization.
+Native Codex is preferred when available. Claude Code, Grok Build, and Cursor remain optional runtime adapters. The project should map durable roles to provider capabilities without pretending lifecycle semantics are identical.
 
 ## Benchmark boundary
 
-Architecture claims remain hypotheses until matched evaluations support them. See `BENCHMARKING.md` and `VALIDATION.md`.
+The important v0.5 comparison is **single Codex vs native multi-agent vs native multi-agent + Durable Threads policy**.
+
+See `BENCHMARKING.md` and `VALIDATION.md`.
