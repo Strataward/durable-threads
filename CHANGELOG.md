@@ -7,21 +7,41 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
+### Planned
+
+- Add an optional OpenAI Agents API backend for headless/CI/SaaS execution and normalized subagent telemetry.
+- Expand matched model/effort benchmarks before making empirical routing automatic.
+- Compare single Codex, native multi-agent Codex, and native multi-agent + Durable Threads policy on the same task corpus.
+
+## [0.5.0] - 2026-09-12
+
 ### Changed
 
-- Rewrite the model-economics article for a more natural engineering audience and replace fragile block math with GitHub-safe prose.
-- Standardize primary diagrams on a hybrid layout: left-to-right system flow with top-to-bottom detail inside major planes.
-- Rework reader-facing guidance so setup, customization, delegation, provider behavior, and model policy are easier to scan without losing technical precision.
-- Refresh installation and OpenAI compatibility references against the current plugin/skill and Codex CLI sources.
+- Reposition Durable Threads as a risk- and cost-aware **policy layer** for native coding-agent runtimes rather than a replacement for Codex's own subagent lifecycle.
+- Prefer native Codex subagents for normal interactive execution.
+- Map read-heavy discovery to Codex `explorer` and bounded implementation/debugging to `worker`.
+- Define the parallelism rule: **subagents for parallel cognition, worktrees for parallel mutation**.
+- Prefer native wait/resume behavior over parent-agent polling loops.
+- Keep external Claude Code, Grok Build, and Cursor adapters as explicit opt-in runtimes rather than default workers.
+- Bump package/plugin version to 0.5.0.
 
 ### Added
 
-- Markdown documentation validation for unclosed code fences, unsupported `$$` block-math delimiters, unfinished placeholders, and broken local links.
+- `docs/NATIVE_MULTI_AGENT.md` with the policy/runtime/verification architecture, native role mapping, worktree guidance, and Agents API boundary.
+- `durable_threads.native` execution hints for built-in Codex role mapping and shared-write/read-only/worktree/serial workspace recommendations.
+- Tests for native role mapping, read-only sharing, worktree recommendations, and overlapping-writer serialization.
+- Optional read-only native Codex role examples under `examples/codex-agents/`.
+- Explicit plugin update documentation using:
 
-### Planned
+  ```bash
+  codex plugin marketplace upgrade strataward && codex plugin add durable-threads@strataward
+  ```
 
-- Expand matched model/effort benchmarks before making empirical routing automatic.
-- Consider a guided `durable-threads init` only if real users need persistent project policy; zero-config use remains the default.
+### Compatibility
+
+- Pre-native-multi-agent v0.4 state is preserved at `archive/pre-native-multi-agent-2026-09-12`.
+- Normal plugin use remains zero-config; custom `.codex/agents/` roles and the Python helper are optional.
+- The OpenAI Agents API is documented as an optional future/headless backend, not a requirement for plugin users.
 
 ## [0.4.0] - 2026-09-12
 
