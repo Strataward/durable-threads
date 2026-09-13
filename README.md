@@ -3,11 +3,13 @@
 [![CI](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml/badge.svg)](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Frontier decisions. Workhorse execution. Deterministic verification. Evidence-gated escalation.**
+**Frontier decisions. Workhorse execution. Native agents. Deterministic verification.**
 
-Durable Threads is a Codex plugin for delegating engineering work without keeping your most expensive model in every part of the loop. It ships one canonical `durable-threads` skill and works with sensible defaults: no roster, Python package, extra provider, or model configuration is required to get started.
+Durable Threads is a risk- and cost-aware policy layer for coding-agent runtimes. On modern Codex it prefers **native subagents** for execution and keeps Durable Threads focused on the higher-value decisions: whether to delegate, how to scope the work, which model/effort class should own it, how much parallelism is safe, what evidence is required, and when escalation is justified.
 
-The **plugin is the installable package**. The bundled **skill is the workflow**. You do not install or maintain them separately.
+OpenAI provides the multi-agent runtime. **Durable Threads decides how to use it well.**
+
+The **plugin is the installable package**. The bundled **skill is the workflow**. The optional Python helper exists for deterministic routing, benchmarks, and provider-neutral experiments; normal Codex use does not require it.
 
 ## Quick start
 
@@ -24,100 +26,99 @@ Start a new Codex session, then ask naturally:
 Use Durable Threads to implement this feature efficiently and verify the result.
 ```
 
-You can also use `/plugins`, choose **Add Marketplace**, enter `Strataward/durable-threads`, and install **Durable Threads** from the `Strataward` marketplace.
+### Update an installed copy
 
-That is the complete basic setup.
+If Durable Threads is already installed from the `strataward` marketplace, refresh the marketplace snapshot and reinstall the plugin:
 
-> Using the Codex IDE extension? Plugins are not currently supported there. Use the [standalone skill fallback](docs/INSTALLATION.md#ide--standalone-skill-fallback).
+```bash
+codex plugin marketplace upgrade strataward && codex plugin add durable-threads@strataward
+```
 
-## What it does
+Then start a **new Codex session** so the updated skill and plugin metadata are loaded.
 
-The default workflow separates decision-making from sustained execution:
+See [Installation](docs/INSTALLATION.md) for details and fallback paths.
+
+> Using the Codex IDE extension? If plugin installation is unavailable on that surface, use the [standalone skill fallback](docs/INSTALLATION.md#ide--standalone-skill-fallback).
+
+## What changed in v0.5
+
+Codex now has a first-class native multi-agent runtime with built-in `explorer` and `worker` roles, configurable subagent model/reasoning defaults, concurrency controls, custom agent roles, native waiting/resume behavior, and experimental worktree support. Durable Threads now treats those capabilities as the preferred Codex execution substrate rather than trying to recreate them.
+
+The core rule is:
+
+> **Use the host's native agent runtime whenever it is capable enough. Durable Threads owns policy, not process management.**
+
+That yields a cleaner architecture:
 
 ```mermaid
 flowchart LR
-    U["Objective"] --> DP
+    U["User objective"] --> DT
 
-    subgraph DP["Decision plane"]
+    subgraph DT["Durable Threads policy"]
         direction TB
-        P["Plan"] --> C["Freeze contract"]
+        D["Delegate?"] --> R["Classify R0-R4"]
+        R --> C["Freeze contract"]
+        C --> M["Choose role / model / effort"]
+        M --> P["Choose parallelism / isolation"]
     end
 
-    C --> EP
+    P --> RT
 
-    subgraph EP["Execution plane"]
+    subgraph RT["Execution runtime"]
         direction TB
-        W["Implement"] --> V["Verify"]
-        V --> Q{"Pass?"}
-        Q -->|"No"| F["Focused correction"]
-        F --> V
+        E["Native explorer"]
+        W["Native worker"]
+        X["Custom reviewer / specialist"]
     end
 
-    Q -->|"Yes"| G{"Risk / ambiguity?"}
-    G -->|"Low"| I["Integrate"]
-    G -->|"High"| R["Stronger review"]
-    R --> I
+    RT --> V["Deterministic verification"]
+    V --> G{"Risk / ambiguity gate"}
+    G -->|"pass"| I["Integrate"]
+    G -->|"needs review"| Q["Independent review / escalation"]
+    Q --> I
 ```
 
-The planner should sleep while a healthy worker executes. It wakes when there is a result, a failure, new evidence, or a real decision to make—not just to poll status.
+## Native Codex policy
 
-The default policy is role-based rather than tied to temporary model IDs:
+Durable Threads maps common work onto Codex's native roles instead of inventing a parallel scheduler:
+
+| Work | Preferred native shape |
+| --- | --- |
+| codebase questions / read-heavy discovery | `explorer` |
+| bounded implementation / debugging | `worker` |
+| routine independent review | read-only custom reviewer when available, otherwise default agent |
+| R3/R4 security review | read-only specialist/frontier reviewer |
+| architecture / consequential decision | main planner/integrator |
+
+The model policy remains economic rather than prestige-driven:
 
 | Job | Starting policy |
 | --- | --- |
-| bounded implementation / debugging | efficient model + high reasoning |
+| bounded implementation / debugging | efficient model + high/XHigh reasoning |
 | difficult general planning | balanced model + medium reasoning |
 | consequential architecture / review | frontier model + low or medium reasoning |
 | R3/R4 security or systemic work | independent specialist/frontier review |
 
-With OpenAI's current model family, that can map naturally to Luna XHigh-like workhorse execution and Astra Low/Medium-like decision work. Durable Threads resolves against live model availability where possible rather than assuming today's model names will remain permanent.
+Durable Threads resolves against live model availability where possible instead of treating today's model IDs as permanent.
 
-## Progressive customization
+## Subagents for cognition, worktrees for mutation
 
-Most users should stop at the quick start. Add configuration only when it solves a concrete problem:
+Native subagents share the active project environment. That is excellent for parallel reading and analysis, but multiple writers need stronger coordination.
 
-1. **Per task:** state a risk level, model/effort preference, or review requirement in the prompt.
-2. **Per repository:** put stable policy in your project's `AGENTS.md`.
-3. **Deterministic orchestration:** use the optional Python helper and roster for reproducible routing, benchmarks, or explicit persistent workers.
-4. **Multi-provider:** configure Claude Code, Grok Build, or Cursor only when you actually want those external workers.
+Durable Threads therefore uses this default rule:
 
-See [Customization](docs/CUSTOMIZATION.md).
+- parallel explorers/reviewers: safe when independent and read-only;
+- one bounded writer: shared checkout is fine;
+- multiple independent writers: prefer isolated worktrees when the runtime supports them;
+- overlapping write ownership: serialize instead of hoping a merge resolves semantic conflicts.
 
-## Why the plugin contains a skill
+**Subagents for parallel cognition. Worktrees for parallel mutation.**
 
-OpenAI's current model is straightforward: **skills author reusable workflows; plugins distribute them**. Durable Threads follows that layout with one source of truth:
-
-```text
-.agents/plugins/marketplace.json
-plugins/
-  durable-threads/
-    .codex-plugin/plugin.json
-    skills/
-      durable-threads/
-        SKILL.md
-        agents/
-        references/
-```
-
-There is no duplicate top-level skill to keep in sync.
-
-## Risk model
-
-Risk measures consequence, not how difficult the code feels:
-
-| Class | Meaning | Typical examples |
-| --- | --- | --- |
-| R0 | mechanical | docs, formatting, typo, narrow rename |
-| R1 | bounded | isolated feature or bug fix |
-| R2 | integration | API contracts, queues, webhooks, caches |
-| R3 | critical | auth, payments, privacy, destructive migration, concurrency |
-| R4 | systemic | distributed architecture, control plane, recovery design |
-
-R0/R1 usually need good deterministic checks, not an expensive independent review. R3/R4 justify stronger independent review by default.
+The optional Python helper exposes the same idea through `durable_threads.native.recommend_native_execution(...)`, which returns inspectable execution hints without spawning Codex itself.
 
 ## Implementation contracts
 
-Workers receive the information needed to execute, not the planner's entire transcript:
+Delegation is driven by a bounded contract, not a transcript dump:
 
 ```text
 OBJECTIVE
@@ -144,13 +145,37 @@ ACCEPTANCE
 - Focused tests and typecheck pass.
 ```
 
-A bounded contract is what makes an efficient high-reasoning worker useful: important decisions are made once, the write scope is explicit, and correctness is checked independently.
+The planner makes important decisions once; the workhorse executes against a narrow contract; machines verify what machines can verify; stronger review is added only when consequence or evidence warrants it.
+
+## Risk model
+
+Risk measures consequence, not how difficult the code feels:
+
+| Class | Meaning | Typical examples |
+| --- | --- | --- |
+| R0 | mechanical | docs, formatting, typo, narrow rename |
+| R1 | bounded | isolated feature or bug fix |
+| R2 | integration | API contracts, queues, webhooks, caches |
+| R3 | critical | auth, payments, privacy, destructive migration, concurrency |
+| R4 | systemic | distributed architecture, control plane, recovery design |
+
+R0/R1 usually need strong deterministic checks rather than expensive independent review. R3/R4 justify independent specialist/frontier review by default.
+
+## Optional custom Codex roles
+
+The repository includes read-only examples under `examples/codex-agents/`:
+
+```text
+examples/codex-agents/
+  dt-reviewer.toml
+  dt-security.toml
+```
+
+Teams that want persistent native reviewer roles can copy/adapt them into the repository's `.codex/agents/` directory. They intentionally do not pin a model ID; model choice remains a routing decision unless reproducibility requires a pin.
 
 ## Optional advanced helper
 
-The repository also includes a Python helper for teams and experiments that need deterministic routing, provider session IDs, structured evidence, CLI dispatch, or benchmark records. It is deliberately optional.
-
-If you do not know why you need a roster, you do not need one.
+The Python helper supports deterministic rosters, R0-R4 routing, provider session IDs, structured evidence, benchmark records, and native-runtime execution hints.
 
 Development install:
 
@@ -158,25 +183,36 @@ Development install:
 python3 -m pip install -e '.[dev]'
 ```
 
-Reference configurations live in `examples/`. Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent; those adapters are opt-in.
+Reference configurations live in `examples/`. Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent; those adapters remain opt-in.
+
+## Runtime strategy
+
+The preferred runtime order is:
+
+1. **Native Codex subagents** for normal interactive Codex work.
+2. **OpenAI Agents API** as an optional future/headless backend for managed sessions, multi-agent execution, and telemetry.
+3. **Claude Code / Grok Build / Cursor** adapters when external-provider execution is intentionally requested.
+
+Durable Threads does not duplicate native Codex spawn/wait/resume machinery unless a measurable capability gap requires it.
 
 ## Documentation
 
-- [Installation and supported surfaces](docs/INSTALLATION.md)
-- [Customization: simple → advanced](docs/CUSTOMIZATION.md)
+- [Installation and plugin updates](docs/INSTALLATION.md)
+- [Native Codex multi-agent integration](docs/NATIVE_MULTI_AGENT.md)
+- [Customization: simple -> advanced](docs/CUSTOMIZATION.md)
 - [OpenAI compatibility / documentation audit](docs/OPENAI_COMPATIBILITY.md)
 - [Architecture](plugins/durable-threads/skills/durable-threads/references/ARCHITECTURE.md)
 - [Model economics](plugins/durable-threads/skills/durable-threads/references/MODEL_ECONOMICS.md)
 - [Risk-aware routing](plugins/durable-threads/skills/durable-threads/references/RISK_ROUTING.md)
 - [Implementation packet contract](plugins/durable-threads/skills/durable-threads/references/PACKET_CONTRACT.md)
 - [Operating policy](plugins/durable-threads/skills/durable-threads/references/OPERATING_POLICY.md)
-- [Persistent threads](plugins/durable-threads/skills/durable-threads/references/PERSISTENT_THREADS.md)
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
 - [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
 
 ## Compatibility history
 
+- Pre-native-multi-agent v0.4 state: `archive/pre-native-multi-agent-2026-09-12`
 - Pre-simplification v0.3 state: `archive/pre-simplified-setup-2026-09-12`
 - Pre-model-economics state: `archive/pre-model-economics-2026-09-12`
 
@@ -189,7 +225,7 @@ ruff check .
 python scripts/validate_repo.py
 ```
 
-Durable Threads is alpha software. Codex plugin/skill surfaces and model catalogs can change quickly, so compatibility documentation is dated and checked against current upstream sources.
+Durable Threads is alpha software. Codex plugin, subagent, model, and worktree surfaces can change quickly, so compatibility documentation is dated and should be rechecked against current upstream sources.
 
 ## License
 
