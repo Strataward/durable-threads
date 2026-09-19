@@ -336,7 +336,10 @@ class ExecutionRegistry:
             plugin = value() if callable(value) and not isinstance(value, ExecutorPlugin) else value
             if not isinstance(plugin, ExecutorPlugin):
                 raise TypeError(
-                    f"entry point {entry.name!r} must return durable_threads.execution.ExecutorPlugin"
+                    (
+                        f"entry point {entry.name!r} must return "
+                        "durable_threads.execution.ExecutorPlugin"
+                    )
                 )
             self.register(plugin)
             loaded.append(plugin.descriptor.executor_id)
