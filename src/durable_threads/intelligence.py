@@ -117,17 +117,32 @@ async def assess_task(
                 "R0": "Mechanical or documentation-only change with negligible consequence.",
                 "R1": "Bounded isolated feature or bug fix with narrow blast radius.",
                 "R2": "Integration or contract change across components or external systems.",
-                "R3": "Critical security, auth, privacy, payments, destructive data, or concurrency work.",
-                "R4": "Systemic distributed architecture, control-plane, recovery, or platform migration work.",
+                "R3": (
+                    "Critical security, auth, privacy, payments, destructive data, "
+                    "or concurrency work."
+                ),
+                "R4": (
+                    "Systemic distributed architecture, control-plane, recovery, "
+                    "or platform migration work."
+                ),
             },
         ),
         "delegate": DecisionQuestion.noul(
-            "Would handing this bounded task to an execution worker improve throughput or isolation?",
+            (
+                "Would handing this bounded task to an execution worker improve "
+                "throughput or isolation?"
+            ),
             true="Delegation has a clear implementation/review boundary.",
-            false="The current planner should keep the work local because delegation adds ambiguity or overhead.",
+            false=(
+                "The current planner should keep the work local because delegation "
+                "adds ambiguity or overhead."
+            ),
         ),
         "ambiguous": DecisionQuestion.noul(
-            "Is the objective materially ambiguous such that execution risks solving the wrong problem?",
+            (
+                "Is the objective materially ambiguous such that execution risks "
+                "solving the wrong problem?"
+            ),
             true="Important requirements or acceptance conditions are unresolved.",
             false="The task is bounded enough to execute against the supplied contract.",
         ),
@@ -136,7 +151,10 @@ async def assess_task(
             {
                 "single_worker": "One bounded executor is sufficient.",
                 "worker_plus_review": "One executor followed by independent review is warranted.",
-                "parallel_workers": "Two independent executors are worth the extra cost because uncertainty is high.",
+                "parallel_workers": (
+                    "Two independent executors are worth the extra cost because "
+                    "uncertainty is high."
+                ),
             },
         ),
         "independent_review": DecisionQuestion.noul(
@@ -209,7 +227,10 @@ async def assess_result(
     }
     questions = {
         "semantic_complete": DecisionQuestion.noul(
-            "Does the reported result satisfy the user's objective rather than merely completing some work?",
+            (
+                "Does the reported result satisfy the user's objective rather than "
+                "merely completing some work?"
+            ),
             true="The result substantively satisfies the objective and stated acceptance intent.",
             false="Important requested behavior is missing, contradicted, or unresolved.",
         ),
@@ -224,7 +245,9 @@ async def assess_result(
                 "accept": "The result is complete enough to pass semantic review.",
                 "correct_same": "A focused correction by the same executor is likely sufficient.",
                 "switch_executor": "The failure suggests a capability or execution mismatch.",
-                "stronger_model": "The work needs materially stronger reasoning, not just another attempt.",
+                "stronger_model": (
+                    "The work needs materially stronger reasoning, not just another attempt."
+                ),
                 "human_review": "The remaining ambiguity or consequence requires a person.",
             },
         ),
