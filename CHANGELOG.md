@@ -13,6 +13,24 @@ The project uses semantic versioning after the 1.0 release.
 - Expand matched model/effort benchmarks before making empirical routing automatic.
 - Compare single Codex, native multi-agent Codex, and native multi-agent + Durable Threads policy on the same task corpus.
 
+## [0.6.0] - 2026-09-19
+
+### Added
+
+- Optional Temporal durable mode with crash-resilient task and child-execution workflows.
+- TypeSafe Jev decision engine for typed risk, delegation, ambiguity, execution-shape, evidence, and intervention judgments.
+- Deterministic uncertainty gates where probabilistic confidence informs policy but never authorizes side effects by itself.
+- Provider-neutral `ExecutionRegistry` with capability routing and `durable_threads.executors` entry points.
+- Durable human-review signals, workflow status queries, execution heartbeats, and evidence verification against the actual git diff.
+- `jev`, `temporal`, and `durable` optional dependency groups plus Temporal worker/client CLIs.
+
+### Changed
+
+- Provider IDs in advanced rosters are now runtime-extensible rather than restricted to a closed built-in enum.
+- R0-R4 deterministic risk is a floor: semantic classification may raise consequence but cannot silently lower it.
+- Shared-checkout writers remain serialized; parallel mutation requires isolated workspaces.
+- Bump package/plugin version to 0.6.0.
+
 ## [0.5.0] - 2026-09-12
 
 ### Changed
