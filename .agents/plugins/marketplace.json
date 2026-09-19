@@ -6,6 +6,7 @@
   "plugins": [
     {
       "name": "durable-threads",
+      "description": "Risk- and cost-aware policy for native Codex agents.",
       "source": {
         "source": "local",
         "path": "./plugins/durable-threads"

@@ -1,6 +1,8 @@
-# Hosted SaaS control plane
+# Self-host the TypeScript control plane
 
-The Codex plugin and skill stay markdown-first. The hosted product is TypeScript.
+Plugin users can ignore this file. This is optional localhost self-host only. This repository has no public deployment.
+
+The Codex plugin and skill stay markdown-first. The in-repo TypeScript tree is the self-host control plane.
 
 See [ADR 0002](adr/0002-typescript-saas.md).
 

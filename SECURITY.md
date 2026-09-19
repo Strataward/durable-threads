@@ -10,7 +10,7 @@ Do not open a public issue for a security vulnerability. Use GitHub private
 vulnerability reporting for this repository. Include the affected version, a
 minimal reproduction, impact, and a proposed mitigation when known.
 
-Do not include credentials, private source, child or family data, or complete
+Do not include secrets, private source, or complete
 agent transcripts in a report.
 
 We will acknowledge a report within seven days. We will provide a status update

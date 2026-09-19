@@ -2,7 +2,7 @@
 
 Version 0.3 introduces a model-economic operating strategy while preserving schema-v1 roster loading.
 
-The pre-v2 repository state is preserved on `archive/pre-model-economics-2026-09-12`.
+The pre-v2 repository state is preserved on the GitHub branch [archive/pre-model-economics-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-model-economics-2026-09-12).
 
 ## What changed
 

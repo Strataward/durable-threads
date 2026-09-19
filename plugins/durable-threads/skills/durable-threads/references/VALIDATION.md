@@ -39,7 +39,7 @@ that the system stops and preserves evidence. Resume only after the real state
 changes. Do not consume an account allowance merely to trigger a quota error.
 
 No controlled live comparison has established a token-saving percentage for
-this version. The earlier StoriBuk task remains smoke-test evidence only.
+this version. The earlier sample-app task remains smoke-test evidence only.
 
 A later three-change CLI trial showed lower uncached input with session reuse.
 It included a runner permission repair and a direct test correction. Parent

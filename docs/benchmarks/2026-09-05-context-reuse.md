@@ -14,8 +14,8 @@ does not establish subscription savings.
 
 ## Method
 
-Two detached StoriBuk worktrees started from the same commit. The active
-project remained unchanged. Each approach completed three related changes:
+Two detached sample-app worktrees started from the same baseline commit. The
+active project remained unchanged. Each approach completed three related changes:
 
 1. Reject invalid chapter counts in the page-index helper.
 2. Add a helper that returns missing page indexes.

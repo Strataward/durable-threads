@@ -14,9 +14,9 @@ justifies a handoff. Those benefits were not measured in this same-model trial.
 
 ## Method
 
-Two new detached StoriBuk worktrees started from commit
-435f90eaf0724b27b70495b70b2b814fed2a768d. Neither contained the earlier trial
-patches. The active StoriBuk checkout remained unchanged.
+Two new detached sample-app worktrees started from a fixed baseline commit.
+Neither contained the earlier trial patches. The active sample-app checkout
+remained unchanged.
 
 Both arms used Codex CLI 0.153.4 with gpt-5.6-luna and low reasoning. Each
 retained one provider session through three related changes:
@@ -65,7 +65,8 @@ passed the format and changed-path checks. Session IDs stayed stable in both
 arms. The full application suite did not run.
 
 The parent reviewed both final diffs. Both implementations met the bounded
-requirements. No benchmark change entered StoriBuk dev or main.
+requirements. No benchmark change entered the sample app's development or main
+branches.
 
 ## Why this changes the interpretation
 

@@ -7,7 +7,7 @@ flowchart LR
     L0["Level 0<br/>Install + native roles"] --> L1["Level 1<br/>Task override"] --> L2["Level 2<br/>AGENTS.md policy"] --> L3["Level 3<br/>Custom Codex agents"] --> L4["Level 4<br/>Roster + helper"]
 ```
 
-Most users should remain at Level 0 or Level 1.
+Most users should remain at Level 0 or Level 1. The TypeScript self-host control plane and the Python durable mode are optional. They are not required for plugin use.
 
 ## Level 0 — use the defaults
 

@@ -18,6 +18,9 @@ examples/local-roster.json
 .codex-thread-ledger/
 uv.lock
 
+# Local Codegraph index
+.codegraph/
+
 # TypeScript monorepo
 node_modules/
 packages/*/dist/

@@ -1,6 +1,6 @@
 # Installation
 
-Last verified: **2026-09-12**.
+Last verified: **2026-09-19**.
 
 Durable Threads has one normal distribution path: install the **Durable Threads plugin**. The plugin bundles the canonical `durable-threads` skill, so plugin users do not install a second copy of the skill.
 
@@ -45,7 +45,7 @@ If your marketplace has a different configured name, substitute that name. `stra
 
 ## Native Codex subagents
 
-Modern Codex includes native multi-agent capabilities. Durable Threads v0.5 prefers those native subagents for ordinary Codex execution rather than launching a second Codex process or building its own polling loop.
+Modern Codex includes native multi-agent capabilities. Durable Threads prefers those native subagents for ordinary Codex execution rather than launching a second Codex process or building its own polling loop.
 
 No additional Durable Threads installation step is required. The bundled skill decides when delegation is useful and can use the runtime's built-in `explorer` and `worker` roles. Optional project-defined reviewer roles can live in `.codex/agents/`; examples are provided under `examples/codex-agents/`.
 
@@ -81,7 +81,7 @@ Only do this when repository pinning is useful. A normal plugin user should not 
 
 ## Optional Python helper
 
-The Python package supports deterministic rosters, provider adapters, native-runtime execution hints, evidence ledgers, and benchmark workflows. It is not required for the plugin or standalone skill.
+The Python package supports deterministic rosters, provider adapters, native-runtime execution hints, evidence ledgers, and benchmark workflows. It is not required for the plugin or standalone skill. It is not published to PyPI.
 
 For development from a checkout:
 

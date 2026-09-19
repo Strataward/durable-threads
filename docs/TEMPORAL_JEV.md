@@ -1,5 +1,7 @@
 # Durable mode: Temporal + Jev
 
+This document is the **Python** durable-mode path. Plugin users can ignore it. For the TypeScript self-host control plane, see [Self-host the TypeScript control plane](SAAS.md).
+
 Durable Threads has two execution modes:
 
 - **native/local mode** keeps the current zero-infrastructure Codex/plugin workflow;
@@ -7,7 +9,7 @@ Durable Threads has two execution modes:
 
 The boundary is deliberate:
 
-\`\`\`text
+```text
 Jev / DecisionEngine
   probabilistic judgment
           |
@@ -27,7 +29,7 @@ ExecutionRegistry
           +--> Grok Build
           +--> Cursor Agent
           +--> third-party executor plugins
-\`\`\`
+```
 
 **Jev informs policy. Code authorizes side effects. Temporal remembers and coordinates. Providers execute. Deterministic checks verify.**
 
@@ -42,73 +44,75 @@ Jev is not used as a text generator. Durable Threads batches closed decisions ag
 - R0-R4 consequence class;
 - whether delegation is useful;
 - ambiguity;
-- execution shape (\`single_worker\`, \`worker_plus_review\`, \`parallel_workers\`);
+- execution shape (`single_worker`, `worker_plus_review`, `parallel_workers`);
 - independent-review need;
 - semantic completeness of a worker result;
 - evidence sufficiency;
-- next intervention (\`accept\`, \`correct_same\`, \`switch_executor\`, \`stronger_model\`, \`human_review\`).
+- next intervention (`accept`, `correct_same`, `switch_executor`, `stronger_model`, `human_review`).
 
 The deterministic risk classifier is a **floor**. A semantic decision may raise risk but cannot lower a deterministic R3/R4 signal. R3/R4 results are never auto-integrated solely because Jev is confident.
 
 ## Provider agnosticism
 
-\`durable_threads.execution.ExecutionRegistry\` routes against capabilities rather than a closed provider enum. A task asks for capabilities such as \`code\`, \`filesystem\`, and \`git\`; the registry selects an available executor that satisfies them.
+`durable_threads.execution.ExecutionRegistry` routes against capabilities rather than a closed provider enum. A task asks for capabilities such as `code`, `filesystem`, and `git`; the registry selects an available executor that satisfies them.
 
 External runtimes can register the Python entry-point group:
 
-\`\`\`text
+```text
 durable_threads.executors
-\`\`\`
+```
 
-Each entry point returns an \`ExecutorPlugin\` containing an \`ExecutorDescriptor\`, optional backend factory, and optional availability probe. Adding a provider therefore does not require editing Durable Threads routing policy.
+Each entry point returns an `ExecutorPlugin` containing an `ExecutorDescriptor`, optional backend factory, and optional availability probe. Adding a provider therefore does not require editing Durable Threads routing policy.
 
 The existing Codex/Claude/Grok/Cursor integrations remain built in. Codex is intentionally native-only in the current helper; Temporal durable mode selects headless backends unless a headless Codex/managed backend plugin is installed.
 
 ## Installation
 
-Base/native mode remains dependency-light:
+This helper is not published to PyPI. Clone the repository and install from the checkout.
 
-\`\`\`bash
-pip install durable-threads
-\`\`\`
+```bash
+git clone https://github.com/Strataward/durable-threads.git
+cd durable-threads
+python3 -m pip install -e '.[dev]'
+```
 
 Jev only:
 
-\`\`\`bash
-pip install 'durable-threads[jev]'
-\`\`\`
+```bash
+python3 -m pip install -e '.[jev]'
+```
 
 Temporal only:
 
-\`\`\`bash
-pip install 'durable-threads[temporal]'
-\`\`\`
+```bash
+python3 -m pip install -e '.[temporal]'
+```
 
 Durable mode:
 
-\`\`\`bash
-pip install 'durable-threads[durable]'
-\`\`\`
+```bash
+python3 -m pip install -e '.[durable]'
+```
 
 Configure TypeSafe and Temporal:
 
-\`\`\`bash
+```bash
 export TYPESAFE_API_KEY='...'
 export TEMPORAL_ADDRESS='localhost:7233'
 export TEMPORAL_NAMESPACE='default'
 export DURABLE_THREADS_TASK_QUEUE='durable-threads'
-\`\`\`
+```
 
 Optional Jev configuration:
 
-\`\`\`bash
+```bash
 export DURABLE_THREADS_JEV_MODEL='jev-latest'
 export DURABLE_THREADS_JEV_TIMEOUT_SECONDS='30'
-\`\`\`
+```
 
 ### Run without a TypeSafe key
 
-Set \`DURABLE_THREADS_DECISION_ENGINE=heuristic\` to run without a TypeSafe key. Set it to \`jev\` to require Jev. The default is \`jev\` when \`TYPESAFE_API_KEY\` is set and \`heuristic\` otherwise.
+Set `DURABLE_THREADS_DECISION_ENGINE=heuristic` to run without a TypeSafe key. Set it to `jev` to require Jev. The default is `jev` when `TYPESAFE_API_KEY` is set and `heuristic` otherwise.
 
 The heuristic engine is deterministic and offline. Use it for tests and benchmarks. It does not judge evidence quality.
 
@@ -116,9 +120,9 @@ The heuristic engine is deterministic and offline. Use it for tests and benchmar
 
 Use the self-hosted dev stack in [ops/temporal/docker-compose.yml](../ops/temporal/docker-compose.yml). The short setup guide is in [ops/temporal/README.md](../ops/temporal/README.md).
 
-\`\`\`bash
+```bash
 docker compose -f ops/temporal/docker-compose.yml up -d
-\`\`\`
+```
 
 Open the UI at <http://localhost:8233>.
 
@@ -126,16 +130,16 @@ Open the UI at <http://localhost:8233>.
 
 Start Temporal locally or point at Temporal Cloud, then:
 
-\`\`\`bash
+```bash
 durable-threads-temporal-worker
-\`\`\`
+```
 
-Use \`--max-sync-activities\` or \`DURABLE_THREADS_MAX_SYNC_ACTIVITIES\` to size the thread pool for routing and verification Activities. The default is 8.
+Use `--max-sync-activities` or `DURABLE_THREADS_MAX_SYNC_ACTIVITIES` to size the thread pool for routing and verification Activities. The default is 8.
 
 The worker registers:
 
-- \`DurableTaskWorkflow\` -- policy loop and human-review gate;
-- \`AgentExecutionWorkflow\` -- one bounded executor attempt;
+- `DurableTaskWorkflow` -- policy loop and human-review gate;
+- `AgentExecutionWorkflow` -- one bounded executor attempt;
 - Jev task/result decision Activities;
 - executor routing;
 - provider execution with heartbeats;
@@ -143,9 +147,9 @@ The worker registers:
 
 ### Test executor
 
-Set \`DURABLE_THREADS_ENABLE_SCRIPTED=1\` to enable the \`scripted\` provider. It replays \`<cwd>/.durable-threads/scripted.json\`.
+Set `DURABLE_THREADS_ENABLE_SCRIPTED=1` to enable the `scripted` provider. It replays `<cwd>/.durable-threads/scripted.json`.
 
-\`\`\`json
+```json
 {
   "writes": {"relative/path": "file content"},
   "result": {
@@ -159,13 +163,13 @@ Set \`DURABLE_THREADS_ENABLE_SCRIPTED=1\` to enable the \`scripted\` provider. I
   "stderr": "",
   "extraStdout": ""
 }
-\`\`\`
+```
 
 Use this executor for tests and benchmarks only. Never use it for real work.
 
 ## Start a durable task
 
-\`\`\`bash
+```bash
 durable-threads-temporal start \
   --objective 'Implement refresh-token rotation' \
   --allowed-path 'src/auth/**' \
@@ -175,29 +179,29 @@ durable-threads-temporal start \
   --cwd /path/to/repository \
   --wait-for-human-review \
   --detach
-\`\`\`
+```
 
 Query the workflow:
 
-\`\`\`bash
+```bash
 durable-threads-temporal status --workflow-id <id>
-\`\`\`
+```
 
 Approve a workflow waiting at a deterministic human gate:
 
-\`\`\`bash
+```bash
 durable-threads-temporal review --workflow-id <id> --approve --note 'Security review passed'
-\`\`\`
+```
 
 Or reject it:
 
-\`\`\`bash
+```bash
 durable-threads-temporal review --workflow-id <id> --reject --note 'Tenant-isolation concern remains'
-\`\`\`
+```
 
 ## Measured overhead
 
-Local dev-server runs measured 0.15–0.5 seconds of orchestration overhead per task and about 130 ms per Jev decision, with two decisions per attempt. A crash escalated in about 45 seconds without creating a duplicate writer. Jev held a thin-evidence task at \`review_required\` because \`evidence_sufficient\` was 0.72, below the R1 threshold of 0.85.
+Local dev-server runs measured 0.15–0.5 seconds of orchestration overhead per task and about 130 ms per Jev decision, with two decisions per attempt. A crash escalated in about 45 seconds without creating a duplicate writer. Jev held a thin-evidence task at `review_required` because `evidence_sufficient` was 0.72, below the R1 threshold of 0.85.
 
 An R4 task parked at the human-review gate survived a worker SIGKILL. The approval signal was delivered while no worker was running, and a replacement worker resumed from history. Resume cost about 10 seconds, all of it Temporal's sticky-queue schedule-to-start timeout.
 
@@ -207,9 +211,9 @@ See the [durable-mode overhead report](benchmarks/2026-09-19-durable-mode-overhe
 
 ## Parallelism and speculative execution
 
-Jev may select \`parallel_workers\` when uncertainty makes hedging worthwhile, and the Temporal workflow is capable of running multiple child workflows concurrently.
+Jev may select `parallel_workers` when uncertainty makes hedging worthwhile, and the Temporal workflow is capable of running multiple child workflows concurrently.
 
-Durable Threads does **not** currently race multiple write-capable workers against the same checkout. The built-in coding contract requires \`filesystem\`/\`git\`, so shared-checkout mutation is serialized. This preserves the existing invariant:
+Durable Threads does **not** currently race multiple write-capable workers against the same checkout. The built-in coding contract requires `filesystem`/`git`, so shared-checkout mutation is serialized. This preserves the existing invariant:
 
 > Subagents for parallel cognition. Isolated workspaces for parallel mutation.
 
@@ -228,7 +232,7 @@ Parallel execution is available for non-mutating/remote executor contracts. Writ
 
 ## Current limitations
 
-- Built-in durable execution currently uses the headless CLI adapters. Managed OpenAI/Codex, Gemini, sandbox, or remote-runner integrations should be implemented as \`ExecutorPlugin\`s rather than special-cased in the workflow. No real coding-agent comparison has been benchmarked yet.
+- Built-in durable execution currently uses the headless CLI adapters. Managed OpenAI/Codex, Gemini, sandbox, or remote-runner integrations should be implemented as `ExecutorPlugin`s rather than special-cased in the workflow. No real coding-agent comparison has been benchmarked yet.
 - Independent automated R3/R4 review is represented as a required gate; the first durable implementation does not run a write-capable coding CLI as a pretend read-only reviewer.
 - Long histories should add a deliberate Continue-As-New boundary once workload telemetry establishes a sensible event threshold.
 - Provider cost/latency learning is not yet used in ranking. Workflow records already retain decision, provider, usage, evidence, and outcome data needed for that optimizer.

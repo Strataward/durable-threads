@@ -2,7 +2,7 @@
   "name": "durable-threads",
   "private": true,
   "version": "0.6.0",
-  "description": "Risk-aware policy for native coding agents, plus a TypeScript SaaS control plane.",
+  "description": "Risk-aware policy for native coding agents, plus an optional self-hosted TypeScript control plane.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=20"

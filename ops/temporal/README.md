@@ -31,4 +31,4 @@ npm run dev:worker
 DURABLE_THREADS_DECISION_ENGINE=heuristic npm run dev:api
 ```
 
-See [Hosted SaaS](../../docs/SAAS.md).
+See [Self-host the TypeScript control plane](../../docs/SAAS.md).

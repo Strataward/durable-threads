@@ -73,4 +73,4 @@ Stop on quota exhaustion, authentication errors, unknown writer state, session d
 
 ## Measurement
 
-Compare total work, corrections, defects, wall time, and final correctness against matched baselines before changing economic defaults. For v0.5, benchmark at least these three shapes: single Codex, native Codex multi-agent, and native Codex multi-agent with Durable Threads policy.
+Compare total work, corrections, defects, wall time, and final correctness against matched baselines before changing economic defaults. Benchmark at least these three shapes: single Codex, native Codex multi-agent, and native Codex multi-agent with Durable Threads policy.

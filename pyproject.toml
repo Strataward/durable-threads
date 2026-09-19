@@ -24,6 +24,12 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/Strataward/durable-threads"
+Repository = "https://github.com/Strataward/durable-threads"
+Issues = "https://github.com/Strataward/durable-threads/issues"
+Changelog = "https://github.com/Strataward/durable-threads/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 jev = [
   "typesafe-sdk>=0.7,<1",

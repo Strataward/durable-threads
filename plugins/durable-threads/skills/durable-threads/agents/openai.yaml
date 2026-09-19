@@ -1,6 +1,6 @@
 interface:
   display_name: "Durable Threads"
-  short_description: "Use bounded handoffs only when they add value"
+  short_description: "Policy for native multi-agent coding"
   default_prompt: "Use $durable-threads to decide whether this work needs a worker and verify the result."
 
 policy:

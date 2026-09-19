@@ -138,6 +138,6 @@ Native Codex is preferred when available. Claude Code, Grok Build, and Cursor re
 
 ## Benchmark boundary
 
-The important v0.5 comparison is **single Codex vs native multi-agent vs native multi-agent + Durable Threads policy**.
+The important comparison is **single Codex vs native multi-agent vs native multi-agent + Durable Threads policy**.
 
 See `BENCHMARKING.md` and `VALIDATION.md`.

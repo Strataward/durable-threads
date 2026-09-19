@@ -1,8 +1,8 @@
 # Native Codex multi-agent integration
 
-Last verified: **2026-09-12**.
+Last verified: **2026-09-19**.
 
-Durable Threads v0.5 treats current Codex multi-agent capabilities as the preferred execution substrate. The project no longer needs to recreate low-level Codex thread management simply to obtain parallel workers.
+Durable Threads treats current Codex multi-agent capabilities as the preferred execution substrate. The project no longer needs to recreate low-level Codex thread management simply to obtain parallel workers.
 
 The division of responsibility is deliberate:
 

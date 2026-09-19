@@ -1,6 +1,6 @@
 # OpenAI compatibility and documentation audit
 
-Last audited: **2026-09-12**.
+Last audited: **2026-09-19**.
 
 This document separates current OpenAI product behavior from Durable Threads policy. Product surfaces move quickly; re-check the linked sources when installation, packaging, subagent, model, or worktree semantics matter.
 

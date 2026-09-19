@@ -9,7 +9,17 @@ Durable Threads is a risk- and cost-aware policy layer for coding-agent runtimes
 
 OpenAI provides the multi-agent runtime. **Durable Threads decides how to use it well.**
 
-The **plugin is the installable package**. The bundled **skill is the workflow**. The optional Python helper exists for deterministic routing, benchmarks, and provider-neutral experiments; normal Codex use does not require it.
+The **plugin is the installable package**. The bundled **skill is the workflow**. Normal Codex use does not require Python, a roster, or a control-plane UI.
+
+## Who it is for
+
+- Codex users who want cheaper, safer multi-agent coding without a second orchestrator.
+- Teams who want to self-host the same policy loop locally.
+
+## Who it is not for
+
+- People who want Durable Threads to replace Codex spawn, wait, or resume.
+- People looking for a hosted sign-up product. None exists in this repository.
 
 ## Quick start
 
@@ -40,9 +50,14 @@ See [Installation](docs/INSTALLATION.md) for details and fallback paths.
 
 > Using the Codex IDE extension? If plugin installation is unavailable on that surface, use the [standalone skill fallback](docs/INSTALLATION.md#ide--standalone-skill-fallback).
 
-## What changed in v0.5
+## What's new in 0.6
 
-Codex now has a first-class native multi-agent runtime with built-in `explorer` and `worker` roles, configurable subagent model/reasoning defaults, concurrency controls, custom agent roles, native waiting/resume behavior, and experimental worktree support. Durable Threads now treats those capabilities as the preferred Codex execution substrate rather than trying to recreate them.
+Codex now has a first-class native multi-agent runtime with built-in `explorer` and `worker` roles, configurable subagent model/reasoning defaults, concurrency controls, custom agent roles, native waiting/resume behavior, and experimental worktree support. Durable Threads treats those capabilities as the preferred Codex execution substrate rather than trying to recreate them.
+
+0.6 also adds optional durability:
+
+- an in-repo **TypeScript control plane** for localhost self-host (Temporal, human gates, local UI);
+- a **Python Temporal helper** for the existing CLI durable-mode path.
 
 The core rule is:
 
@@ -173,84 +188,63 @@ examples/codex-agents/
 
 Teams that want persistent native reviewer roles can copy/adapt them into the repository's `.codex/agents/` directory. They intentionally do not pin a model ID; model choice remains a routing decision unless reproducibility requires a pin.
 
-## Durable mode: Temporal + Jev
+## Self-host the control plane
 
-Native Codex remains the zero-infrastructure default. For long-lived or cross-provider work, Durable Threads now has an optional **durable mode** built around two deeper primitives:
+This repository includes an optional TypeScript control plane for localhost Temporal, human gates, and a local UI. Plugin users can ignore it.
 
-- **TypeSafe Jev** supplies fast, typed probabilistic judgments for risk, delegation, ambiguity, execution shape, evidence sufficiency, and escalation.
-- **Temporal** owns durable workflow state, child execution, retries, signals, crash recovery, and human-review waits.
-- **Durable Threads policy** remains deterministic authority: Jev confidence is evidence, never permission by itself.
-- **ExecutionRegistry** selects providers by capabilities and supports third-party `durable_threads.executors` entry points instead of a closed provider enum.
-- **Evidence verification** compares worker claims with the actual git diff before semantic acceptance.
+See [Self-host the TypeScript control plane](docs/SAAS.md). There is no public hosted deployment in this repository.
 
-The policy loop is:
+## Optional Python helper
 
-```text
-task
-  -> Jev task assessment
-  -> deterministic risk floor / policy gate
-  -> capability-based executor routing
-  -> Temporal child execution
-  -> deterministic evidence verification
-  -> Jev result assessment
-  -> accept / correct / switch / strengthen / human review
-```
+The Python helper supports deterministic rosters, R0-R4 routing, provider session IDs, structured evidence, benchmark records, native-runtime execution hints, and the existing Temporal + Jev CLI durable mode.
 
-Install the optional durable stack:
-
-```bash
-python3 -m pip install -e '.[durable]'
-```
-
-Run a worker:
-
-```bash
-durable-threads-temporal-worker
-```
-
-Start a durable task:
-
-```bash
-durable-threads-temporal start \
-  --objective 'Implement refresh-token rotation' \
-  --allowed-path 'src/auth/**' \
-  --acceptance 'Replay is rejected' \
-  --cwd /path/to/repository
-```
-
-Try it without a provider or a TypeSafe key:
-
-```bash
-docker compose -f ops/temporal/docker-compose.yml up -d
-python3 -m pytest tests/test_temporal_workflows.py
-python3 scripts/bench_durable.py --runs 5
-python3 scripts/bench_durable.py --scenario gate-recovery --runs 1
-```
-
-Write-capable workers are deliberately serialized on a shared checkout. Parallel mutation requires real workspace isolation; Durable Threads will not race multiple writers against the same working tree merely because Jev suggests `parallel_workers`.
-
-See [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md).
-
-## Optional advanced helper
-
-The Python helper supports deterministic rosters, R0-R4 routing, provider session IDs, structured evidence, benchmark records, and native-runtime execution hints.
-
-Development install:
+It is not on PyPI and is not the long-term control plane. Clone this repository and install from the checkout:
 
 ```bash
 python3 -m pip install -e '.[dev]'
 ```
 
+Durable mode extras:
+
+```bash
+python3 -m pip install -e '.[durable]'
+```
+
 Reference configurations live in `examples/`. Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent; those adapters remain opt-in.
+
+Native Codex remains the zero-infrastructure default. For long-lived or cross-provider work, the Python helper's durable mode uses:
+
+- **TypeSafe Jev** for fast, typed probabilistic judgments;
+- **Temporal** for durable workflow state, retries, signals, crash recovery, and human-review waits;
+- **Durable Threads policy** as deterministic authority: Jev confidence is evidence, never permission by itself.
+
+See [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md).
+
+## FAQ
+
+**Do I need the TypeScript control plane or the Python helper?**
+No. Install the Codex plugin. That is the product.
+
+**When would I self-host the TypeScript plane?**
+When you want Temporal, human gates, and a local UI on localhost. See [docs/SAAS.md](docs/SAAS.md).
+
+**When would I use the Python helper?**
+For deterministic routing, benches, provider-neutral experiments, or the existing CLI durable mode. Clone the repo; it is not on PyPI.
+
+**Do I need a roster?**
+No. Rosters are an advanced opt-in.
+
+**Is there a live hosted service?**
+No. This repository has no sign-up URL and no public deployment.
 
 ## Runtime strategy
 
 The preferred runtime order is:
 
 1. **Native Codex subagents** for normal interactive Codex work.
-2. **Temporal durable mode** for long-running, crash-resilient, cross-provider, or human-gated work.
-3. **OpenAI Agents API** as an optional managed/headless execution backend when its platform lifecycle is the right fit.
-4. **Claude Code / Grok Build / Cursor / executor plugins** when external-provider execution is intentionally requested.
+2. **TypeScript Temporal control plane** for optional self-hosted, long-lived, or human-gated work in this repository on localhost.
+3. **Python Temporal helper** until TypeScript parity, then deprecate.
+4. **OpenAI Agents API / other providers** when that execution backend is explicitly requested.
 
 Durable Threads does not duplicate native Codex spawn/wait/resume machinery unless a measurable capability gap requires it. Temporal is an optional durability substrate, not a prerequisite for the plugin.
 
@@ -258,6 +252,7 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 
 - [Installation and plugin updates](docs/INSTALLATION.md)
 - [Native Codex multi-agent integration](docs/NATIVE_MULTI_AGENT.md)
+- [Self-host the TypeScript control plane](docs/SAAS.md)
 - [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md)
 - [Customization: simple -> advanced](docs/CUSTOMIZATION.md)
 - [OpenAI compatibility / documentation audit](docs/OPENAI_COMPATIBILITY.md)
@@ -269,16 +264,15 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
 - [Durable mode overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
-- [ADR 0001: Rust / WebAssembly decision](docs/adr/0001-rust-wasm.md)
-- [ADR 0002: TypeScript SaaS control plane](docs/adr/0002-typescript-saas.md)
-- [Hosted SaaS](docs/SAAS.md)
+- [ADR 0001: Rust / WebAssembly decision (superseded)](docs/adr/0001-rust-wasm.md)
+- [ADR 0002: TypeScript control plane](docs/adr/0002-typescript-saas.md)
 - [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
 
 ## Compatibility history
 
-- Pre-native-multi-agent v0.4 state: `archive/pre-native-multi-agent-2026-09-12`
-- Pre-simplification v0.3 state: `archive/pre-simplified-setup-2026-09-12`
-- Pre-model-economics state: `archive/pre-model-economics-2026-09-12`
+- Pre-native-multi-agent v0.4: [archive/pre-native-multi-agent-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-native-multi-agent-2026-09-12)
+- Pre-simplification v0.3: [archive/pre-simplified-setup-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-simplified-setup-2026-09-12)
+- Pre-model-economics: [archive/pre-model-economics-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-model-economics-2026-09-12)
 
 ## Development
 
@@ -292,7 +286,7 @@ npm install
 npm test
 ```
 
-Durable mode: the Python checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`. The hosted TypeScript control plane is documented in [docs/SAAS.md](docs/SAAS.md).
+Durable mode: the Python checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`. The self-hosted TypeScript control plane is documented in [docs/SAAS.md](docs/SAAS.md).
 
 Durable Threads is alpha software. Codex plugin, subagent, model, and worktree surfaces can change quickly, so compatibility documentation is dated and should be rechecked against current upstream sources.
 

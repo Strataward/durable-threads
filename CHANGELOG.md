@@ -7,28 +7,9 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
-### Added
-
-- Add a TypeScript SaaS control plane (`packages/policy`, `packages/executors`, `apps/worker`, `apps/api`, `apps/web`) and ADR 0002. Hosted execution uses sandboxed/headless adapters instead of local CLI binaries.
-- Add `HeuristicDecisionEngine` and `DURABLE_THREADS_DECISION_ENGINE` for deterministic offline decisions.
-- Add the `scripted` test executor behind `DURABLE_THREADS_ENABLE_SCRIPTED`.
-- Add Temporal workflow tests with a time-skipping environment.
-- Add `scripts/bench_durable.py` and the durable-mode overhead report.
-- Add the `ops/temporal` self-hosted development compose stack.
-- Add the `gate-recovery` benchmark scenario: an R4 task survives a worker SIGKILL at the human-review gate, accepts the approval signal with no worker running, and resumes from history.
-- Add `scripts/bench_primitives.py` to time the deterministic policy primitives in isolation.
-- Add ADR 0001 recording measured Python harness cost, later superseded by ADR 0002 for the hosted TypeScript control plane.
-
-### Fixed
-
-- Fix the worker entrypoint so sync Activities receive a thread-pool `activity_executor`.
-- Fix verification so it reads the existing `concerns` field instead of a non-existent `remaining_concerns` attribute.
-- Fix routing so no remaining executor returns a failed task after `switch_executor`.
-- Fix evidence validation so runtime-extensible provider IDs are accepted.
-
 ### Planned
 
-- Add an optional OpenAI Agents API backend for headless/CI/SaaS execution and normalized subagent telemetry.
+- Add an optional OpenAI Agents API backend for headless/CI execution and normalized subagent telemetry.
 - Expand matched model/effort benchmarks before making empirical routing automatic.
 - Compare single Codex, native multi-agent Codex, and native multi-agent + Durable Threads policy on the same task corpus.
 
@@ -42,6 +23,15 @@ The project uses semantic versioning after the 1.0 release.
 - Provider-neutral `ExecutionRegistry` with capability routing and `durable_threads.executors` entry points.
 - Durable human-review signals, workflow status queries, execution heartbeats, and evidence verification against the actual git diff.
 - `jev`, `temporal`, and `durable` optional dependency groups plus Temporal worker/client CLIs.
+- Add an optional self-hosted TypeScript control plane (`packages/policy`, `packages/executors`, `apps/worker`, `apps/api`, `apps/web`) and ADR 0002. Self-host execution uses sandboxed/headless adapters instead of local CLI binaries.
+- Add `HeuristicDecisionEngine` and `DURABLE_THREADS_DECISION_ENGINE` for deterministic offline decisions.
+- Add the `scripted` test executor behind `DURABLE_THREADS_ENABLE_SCRIPTED`.
+- Add Temporal workflow tests with a time-skipping environment.
+- Add `scripts/bench_durable.py` and the durable-mode overhead report.
+- Add the `ops/temporal` self-hosted development compose stack.
+- Add the `gate-recovery` benchmark scenario: an R4 task survives a worker SIGKILL at the human-review gate, accepts the approval signal with no worker running, and resumes from history.
+- Add `scripts/bench_primitives.py` to time the deterministic policy primitives in isolation.
+- Add ADR 0001 recording measured Python harness cost, later superseded by ADR 0002 for the TypeScript control plane.
 
 ### Changed
 
@@ -49,6 +39,14 @@ The project uses semantic versioning after the 1.0 release.
 - R0-R4 deterministic risk is a floor: semantic classification may raise consequence but cannot silently lower it.
 - Shared-checkout writers remain serialized; parallel mutation requires isolated workspaces.
 - Bump package/plugin version to 0.6.0.
+- Public docs lead with the Codex plugin and describe the TypeScript tree as optional localhost self-host, not a live hosted service.
+
+### Fixed
+
+- Fix the worker entrypoint so sync Activities receive a thread-pool `activity_executor`.
+- Fix verification so it reads the existing `concerns` field instead of a non-existent `remaining_concerns` attribute.
+- Fix routing so no remaining executor returns a failed task after `switch_executor`.
+- Fix evidence validation so runtime-extensible provider IDs are accepted.
 
 ## [0.5.0] - 2026-09-12
 
@@ -76,7 +74,7 @@ The project uses semantic versioning after the 1.0 release.
 
 ### Compatibility
 
-- Pre-native-multi-agent v0.4 state is preserved at `archive/pre-native-multi-agent-2026-09-12`.
+- Pre-native-multi-agent v0.4 state is preserved on the GitHub branch [archive/pre-native-multi-agent-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-native-multi-agent-2026-09-12).
 - Normal plugin use remains zero-config; custom `.codex/agents/` roles and the Python helper are optional.
 - The OpenAI Agents API is documented as an optional future/headless backend, not a requirement for plugin users.
 
@@ -101,7 +99,7 @@ The project uses semantic versioning after the 1.0 release.
 
 ### Compatibility
 
-- Pre-simplification v0.3 state is preserved at `archive/pre-simplified-setup-2026-09-12`.
+- Pre-simplification v0.3 state is preserved on the GitHub branch [archive/pre-simplified-setup-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-simplified-setup-2026-09-12).
 - Standalone skill users can install the same bundled skill directly; no duplicate skill implementation is maintained.
 
 ## [0.3.0] - 2026-09-12
@@ -128,7 +126,7 @@ The project uses semantic versioning after the 1.0 release.
 ### Compatibility
 
 - Schema-v1 rosters continue to load.
-- Pre-v0.3 repository state is preserved at `archive/pre-model-economics-2026-09-12`.
+- Pre-v0.3 repository state is preserved on the GitHub branch [archive/pre-model-economics-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-model-economics-2026-09-12).
 
 ## [0.2.0] - 2026-09-05
 

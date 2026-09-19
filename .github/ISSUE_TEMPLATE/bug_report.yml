@@ -5,7 +5,7 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: Do not include secrets, private source, family data, or raw transcripts.
+      value: Do not include secrets, private source, or raw transcripts.
   - type: input
     id: version
     attributes:

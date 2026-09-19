@@ -2,13 +2,13 @@
 
 ## Scope
 
-This record compares the upstream `backnotprop/orchestrator` trial with the
-skill-first design in this repository. It is a practical decision record. It
-is not a benchmark or a claim about every project.
+This record compares an upstream orchestrator trial with the skill-first
+design in this repository. It is a practical decision record. It is not a
+benchmark or a claim about every project.
 
 ## Trial result
 
-The upstream tool completed one bounded StoriBuk task in a persistent Codex
+The upstream tool completed one bounded sample-app task in a persistent Codex
 session. The worker changed only the two allowed files. The focused tests,
 typecheck, lint, and diff checks passed.
 
@@ -35,9 +35,16 @@ evidence. It does not execute model output.
 Add a richer runtime adapter only after a second live comparison proves that it
 reduces total rework and handles usage-limit recovery correctly.
 
-The public claim is intentionally narrow. This repository is a packet and
-evidence control layer. It is not a workflow engine. It does not own automatic
-provider restart or provider-side writer recovery.
+The public product boundary in 0.6 is:
+
+- native Codex policy for interactive work (risk class, bounded contracts,
+  safe parallelism, evidence-gated escalation);
+- an optional self-hosted TypeScript control plane in this repository;
+- an optional Python Temporal helper until TypeScript parity.
+
+Durable Threads does not replace Codex spawn, wait, or resume. It does not
+provide a hosted sign-up product. The TypeScript plane is localhost self-host
+only.
 
 ## Remaining evidence gap
 

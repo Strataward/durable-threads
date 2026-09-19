@@ -15,6 +15,11 @@ EXCLUDED_PARTS = {
     ".ruff_cache",
     "dist",
     "uv.lock",
+    "node_modules",
+    ".codegraph",
+    ".vite",
+    ".DS_Store",
+    ".cursor",
 }
 
 

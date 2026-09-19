@@ -2,9 +2,25 @@
 
 ## Scope
 
-Durable Threads is one plugin whose canonical workflow is the bundled `durable-threads` skill. The Python helper and multi-provider adapters are optional advanced tooling.
+Durable Threads is the public Codex plugin. The bundled `durable-threads` skill is the canonical workflow.
 
-Do not create a second copy of the skill as another installation surface. Keep the canonical source under `plugins/durable-threads/skills/durable-threads/`.
+Canonical source: `plugins/durable-threads/skills/durable-threads/`. Do not add a second skill install surface.
+
+The Python helper and provider adapters are optional. The TypeScript tree (`apps/*`, `packages/*`) is the public self-host control plane.
+
+Hosted and customer-deploy work does not belong in this repository. Do not copy private deploy or customer secrets into this repository.
+
+## Key paths
+
+| Path | Role |
+|---|---|
+| `plugins/durable-threads/` | Installable Codex plugin |
+| `plugins/durable-threads/skills/durable-threads/` | Canonical skill and references |
+| `.agents/plugins/marketplace.json` | Marketplace entry for this plugin |
+| `src/` | Optional Python helper |
+| `docs/` | Install, native agents, Temporal, self-host, compatibility |
+| `apps/api`, `apps/worker`, `apps/web` | Public self-host TypeScript plane |
+| `packages/contracts`, `packages/policy`, `packages/executors` | Shared TypeScript policy |
 
 ## Required checks
 
@@ -19,6 +35,10 @@ npm test
 ```
 
 When installation or packaging changes, verify current OpenAI plugin/skill documentation and update `docs/OPENAI_COMPATIBILITY.md` with the audit date.
+
+## Codegraph
+
+This repository has `.codegraph/`. Pass `projectPath` as this folder. Do not init Codegraph in `../` or in `PROJECTS/`.
 
 ## Safety rules
 
