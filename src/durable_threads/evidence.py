@@ -167,7 +167,7 @@ def validate_evidence(
 ) -> WorkerEvidence:
     """Validate status, paths, checks, and optionally the exact working-tree diff."""
 
-    if evidence.provider not in {"codex", "claude", "grok", "cursor"}:
+    if evidence.provider not in {"codex", "claude", "grok", "cursor", "scripted"}:
         raise EvidenceError("worker result must declare a provider")
     changed = _validate_paths(evidence.changed_paths, allowed_paths)
     if evidence.status == "complete" and not evidence.checks:

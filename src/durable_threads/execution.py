@@ -366,6 +366,9 @@ def default_execution_registry(*, load_entry_points: bool = True) -> ExecutionRe
     """Build the default registry around current built-in coding-agent adapters."""
 
     registry = ExecutionRegistry()
+    from .scripted import scripted_executor_plugin
+
+    registry.register(scripted_executor_plugin())
     for capability in get_capabilities():
         provider = capability.provider
         capabilities = {"code", "filesystem", "git"}
