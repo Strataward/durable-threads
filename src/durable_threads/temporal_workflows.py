@@ -188,8 +188,9 @@ class DurableTaskWorkflow:
         self._phase = "waiting_for_human_review"
         self._review_decision = None
         await workflow.wait_condition(lambda: self._review_decision is not None)
-        assert self._review_decision is not None
         decision = self._review_decision
+        if decision is None:
+            raise RuntimeError("review wait resumed without a decision")
         self._review_decision = None
         return decision
 
