@@ -79,6 +79,45 @@ The replacement worker observed `ActivityTaskTimedOut`, the child workflow
 failed, and the parent escalated to a human without starting a second writer.
 No duplicate file write happened.
 
+### Human-gate recovery (R4 task parked at review, worker SIGKILLed)
+
+The task `Migrate the control plane to a multi-region architecture` classifies
+as R4, so the parent workflow stops at `waiting_for_human_review` before any
+executor runs. The benchmark kills the only worker there, then, with **no
+worker running**, calls `describe()` and delivers the approval signal. A
+replacement worker is started and must rebuild state from history.
+
+| Engine | Runs | Gate reached after | Status with worker down | History with worker down | Phase after replay | Resume to completion | Of which sticky-queue timeout |
+|---|---|---|---|---|---|---|---|
+| heuristic | 3 | 0.258 s | `RUNNING` | 10 events | `routing` | 10.20 s | 10.00 s |
+| Jev | 3 | 0.401 s | `RUNNING` | 10 events | `routing` | 10.49 s | 10.00 s |
+
+The signal landed while nothing was polling the task queue. The replacement
+worker replayed the ten stored events, saw the approval, and continued into
+routing and execution. Final status is `review_required` because the R4 result
+also requires a human review after execution; the task still completed one
+writer run and verified its diff.
+
+The 10 s inside "resume to completion" is not Durable Threads code. The
+workflow task after the signal was scheduled on the dead worker's sticky
+queue; Temporal waited for its schedule-to-start timeout (`WorkflowTaskTimedOut`
+at +10.00 s in every run) before rescheduling on the shared queue. Real work
+resumed about 0.2 s later.
+
+### Deterministic primitives (no Temporal, no Jev, no provider)
+
+`scripts/bench_primitives.py`, 20 000 iterations each, CPython 3.12:
+
+| Primitive | µs per call |
+|---|---:|
+| `classify_risk` for five objectives | 87 |
+| `parse_worker_result` + `validate_evidence` | 25 |
+| `ExecutionRegistry.rank` | 7 |
+| `select_workers` (roster routing) | 58 |
+| `assess_task` with the heuristic engine | 90 |
+
+The whole deterministic policy layer costs well under one millisecond per task.
+
 ## Reading the numbers
 
 1. **Orchestration overhead is 0.15-0.5 s per task**, dominated by Temporal
@@ -102,6 +141,17 @@ No duplicate file write happened.
 5. **Crash recovery is bounded by the heartbeat timeout**, not by human
    attention. 45 s is the current constant in `temporal_workflows.py`; lower
    it if provider heartbeats are frequent.
+6. **Signals survive without a worker.** Approval delivered to a workflow with
+   zero pollers was stored in history and applied on replay. Recovery after a
+   worker loss costs about 10 s, all of it Temporal's sticky-queue
+   schedule-to-start timeout (`Worker(sticky_queue_schedule_to_start_timeout=...)`,
+   default 10 s in the Python SDK). Lower it if fast failover matters more
+   than cache hits.
+7. **The Python policy layer is not a bottleneck.** Every deterministic
+   primitive is under 100 µs. Temporal dispatch is roughly 1 000x larger and
+   a real provider run is roughly 1 000 000x larger. See
+   [ADR 0001](../adr/0001-rust-wasm.md) for what this means for a Rust or
+   WebAssembly port.
 
 ## What this does not show
 
@@ -125,6 +175,8 @@ python3 scripts/bench_durable.py --runs 20 --engine heuristic --scenario happy \
   --out docs/benchmarks/data/heuristic-happy.json
 python3 scripts/bench_durable.py --runs 10 --engine heuristic --scenario mismatch
 python3 scripts/bench_durable.py --runs 2  --engine heuristic --scenario crash
+python3 scripts/bench_durable.py --runs 3  --engine heuristic --scenario gate-recovery
+python3 scripts/bench_primitives.py --iterations 20000
 
 export TYPESAFE_API_KEY='...'
 python3 scripts/bench_durable.py --runs 10 --engine jev --scenario happy

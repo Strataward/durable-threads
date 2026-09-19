@@ -199,7 +199,11 @@ durable-threads-temporal review --workflow-id <id> --reject --note 'Tenant-isola
 
 Local dev-server runs measured 0.15–0.5 seconds of orchestration overhead per task and about 130 ms per Jev decision, with two decisions per attempt. A crash escalated in about 45 seconds without creating a duplicate writer. Jev held a thin-evidence task at \`review_required\` because \`evidence_sufficient\` was 0.72, below the R1 threshold of 0.85.
 
-See the [durable-mode overhead report](benchmarks/2026-09-19-durable-mode-overhead.md) and [benchmark runner](../scripts/bench_durable.py).
+An R4 task parked at the human-review gate survived a worker SIGKILL. The approval signal was delivered while no worker was running, and a replacement worker resumed from history. Resume cost about 10 seconds, all of it Temporal's sticky-queue schedule-to-start timeout.
+
+The deterministic policy layer (risk, routing, evidence, gating) costs under one millisecond per task. A Rust or WebAssembly port would not change end-to-end latency; see [ADR 0001](adr/0001-rust-wasm.md).
+
+See the [durable-mode overhead report](benchmarks/2026-09-19-durable-mode-overhead.md) and the benchmark runners [`scripts/bench_durable.py`](../scripts/bench_durable.py) and [`scripts/bench_primitives.py`](../scripts/bench_primitives.py).
 
 ## Parallelism and speculative execution
 

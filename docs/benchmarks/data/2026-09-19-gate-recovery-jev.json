@@ -1,0 +1,113 @@
+{
+  "date": "2026-09-19T18:24:25+00:00",
+  "delaySeconds": 0.0,
+  "engine": "jev",
+  "results": [
+    {
+      "attempts": 1,
+      "clientWall": 12.026840311000115,
+      "gateReachedAfter": 0.5970430899999428,
+      "historyEvents": 32,
+      "historyLengthWhileWorkerDown": 10,
+      "parentPhases": {
+        "assess_task_activity": 0.351169,
+        "child_workflow": 0.334663,
+        "route_executors_activity": 0.010284,
+        "workflow_task:timed_out": 10.001992
+      },
+      "phaseAfterRestart": "routing",
+      "resumeToCompletion": 10.416240421000111,
+      "risk": "R4",
+      "status": "review_required",
+      "statusWhileWorkerDown": "RUNNING",
+      "workflowId": "dt-gate-a1b096f22ebd"
+    },
+    {
+      "attempts": 1,
+      "clientWall": 11.931259795000187,
+      "gateReachedAfter": 0.38854086100013774,
+      "historyEvents": 32,
+      "historyLengthWhileWorkerDown": 10,
+      "parentPhases": {
+        "assess_task_activity": 0.262427,
+        "child_workflow": 0.442445,
+        "route_executors_activity": 0.009824,
+        "workflow_task:timed_out": 10.002509
+      },
+      "phaseAfterRestart": "routing",
+      "resumeToCompletion": 10.528626296000084,
+      "risk": "R4",
+      "status": "review_required",
+      "statusWhileWorkerDown": "RUNNING",
+      "workflowId": "dt-gate-1d0334cc5769"
+    },
+    {
+      "attempts": 1,
+      "clientWall": 11.902444848999949,
+      "gateReachedAfter": 0.4013511829998606,
+      "historyEvents": 32,
+      "historyLengthWhileWorkerDown": 10,
+      "parentPhases": {
+        "assess_task_activity": 0.339083,
+        "child_workflow": 0.4056,
+        "route_executors_activity": 0.009237,
+        "workflow_task:timed_out": 10.002733
+      },
+      "phaseAfterRestart": "routing",
+      "resumeToCompletion": 10.48726075400009,
+      "risk": "R4",
+      "status": "review_required",
+      "statusWhileWorkerDown": "RUNNING",
+      "workflowId": "dt-gate-e13c412a9425"
+    }
+  ],
+  "runs": 3,
+  "scenario": "gate-recovery",
+  "summary": {
+    "clientWall": {
+      "max": 12.026840311000115,
+      "mean": 11.953514985000083,
+      "median": 11.931259795000187,
+      "min": 11.902444848999949,
+      "p95": 12.026840311000115
+    },
+    "gateReachedAfter": {
+      "max": 0.5970430899999428,
+      "mean": 0.4623117113333137,
+      "median": 0.4013511829998606,
+      "min": 0.38854086100013774,
+      "p95": 0.5970430899999428
+    },
+    "phaseAfterRestart": [
+      "routing"
+    ],
+    "resumeToCompletion": {
+      "max": 10.528626296000084,
+      "mean": 10.477375823666762,
+      "median": 10.48726075400009,
+      "min": 10.416240421000111,
+      "p95": 10.528626296000084
+    },
+    "risks": [
+      "R4"
+    ],
+    "statusWhileWorkerDown": [
+      "RUNNING"
+    ],
+    "statuses": [
+      "review_required"
+    ],
+    "workflowTaskTimedOut": {
+      "max": 10.002733,
+      "mean": 10.002411333333333,
+      "median": 10.002509,
+      "min": 10.001992,
+      "p95": 10.002733
+    }
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "dt-bench-bcada7d3"
+  }
+}
