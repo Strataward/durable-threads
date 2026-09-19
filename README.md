@@ -173,6 +173,55 @@ examples/codex-agents/
 
 Teams that want persistent native reviewer roles can copy/adapt them into the repository's `.codex/agents/` directory. They intentionally do not pin a model ID; model choice remains a routing decision unless reproducibility requires a pin.
 
+## Durable mode: Temporal + Jev
+
+Native Codex remains the zero-infrastructure default. For long-lived or cross-provider work, Durable Threads now has an optional **durable mode** built around two deeper primitives:
+
+- **TypeSafe Jev** supplies fast, typed probabilistic judgments for risk, delegation, ambiguity, execution shape, evidence sufficiency, and escalation.
+- **Temporal** owns durable workflow state, child execution, retries, signals, crash recovery, and human-review waits.
+- **Durable Threads policy** remains deterministic authority: Jev confidence is evidence, never permission by itself.
+- **ExecutionRegistry** selects providers by capabilities and supports third-party `durable_threads.executors` entry points instead of a closed provider enum.
+- **Evidence verification** compares worker claims with the actual git diff before semantic acceptance.
+
+The policy loop is:
+
+```text
+task
+  -> Jev task assessment
+  -> deterministic risk floor / policy gate
+  -> capability-based executor routing
+  -> Temporal child execution
+  -> deterministic evidence verification
+  -> Jev result assessment
+  -> accept / correct / switch / strengthen / human review
+```
+
+Install the optional durable stack:
+
+```bash
+python3 -m pip install -e '.[durable]'
+```
+
+Run a worker:
+
+```bash
+durable-threads-temporal-worker
+```
+
+Start a durable task:
+
+```bash
+durable-threads-temporal start \
+  --objective 'Implement refresh-token rotation' \
+  --allowed-path 'src/auth/**' \
+  --acceptance 'Replay is rejected' \
+  --cwd /path/to/repository
+```
+
+Write-capable workers are deliberately serialized on a shared checkout. Parallel mutation requires real workspace isolation; Durable Threads will not race multiple writers against the same working tree merely because Jev suggests `parallel_workers`.
+
+See [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md).
+
 ## Optional advanced helper
 
 The Python helper supports deterministic rosters, R0-R4 routing, provider session IDs, structured evidence, benchmark records, and native-runtime execution hints.
@@ -190,15 +239,17 @@ Reference configurations live in `examples/`. Installing Durable Threads does no
 The preferred runtime order is:
 
 1. **Native Codex subagents** for normal interactive Codex work.
-2. **OpenAI Agents API** as an optional future/headless backend for managed sessions, multi-agent execution, and telemetry.
-3. **Claude Code / Grok Build / Cursor** adapters when external-provider execution is intentionally requested.
+2. **Temporal durable mode** for long-running, crash-resilient, cross-provider, or human-gated work.
+3. **OpenAI Agents API** as an optional managed/headless execution backend when its platform lifecycle is the right fit.
+4. **Claude Code / Grok Build / Cursor / executor plugins** when external-provider execution is intentionally requested.
 
-Durable Threads does not duplicate native Codex spawn/wait/resume machinery unless a measurable capability gap requires it.
+Durable Threads does not duplicate native Codex spawn/wait/resume machinery unless a measurable capability gap requires it. Temporal is an optional durability substrate, not a prerequisite for the plugin.
 
 ## Documentation
 
 - [Installation and plugin updates](docs/INSTALLATION.md)
 - [Native Codex multi-agent integration](docs/NATIVE_MULTI_AGENT.md)
+- [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md)
 - [Customization: simple -> advanced](docs/CUSTOMIZATION.md)
 - [OpenAI compatibility / documentation audit](docs/OPENAI_COMPATIBILITY.md)
 - [Architecture](plugins/durable-threads/skills/durable-threads/references/ARCHITECTURE.md)

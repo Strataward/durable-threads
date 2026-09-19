@@ -393,7 +393,7 @@ def build_parser() -> argparse.ArgumentParser:
     record.add_argument("--task-id", required=True)
     record.add_argument("--role", required=True)
     record.add_argument("--status", required=True)
-    record.add_argument("--provider", choices=PROVIDERS)
+    record.add_argument("--provider", help="provider id; external executor plugins are allowed")
     record.add_argument("--thread-id")
     record.add_argument("--result")
     record.add_argument("--usage", help="JSON object with provider usage counters")

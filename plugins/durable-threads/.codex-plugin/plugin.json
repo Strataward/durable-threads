@@ -1,7 +1,7 @@
 {
   "name": "durable-threads",
-  "version": "0.5.0",
-  "description": "Risk- and cost-aware policy for native Codex subagents, deterministic verification, and evidence-gated escalation.",
+  "version": "0.6.0",
+  "description": "Risk- and cost-aware policy for native agents plus optional Temporal/Jev durable orchestration.",
   "author": {
     "name": "Waleed Dogar",
     "url": "https://github.com/waleeddogar"
