@@ -11,7 +11,7 @@ def test_durable_task_contract_bounds_parallelism() -> None:
             objective="Implement a bounded change",
             allowed_paths=["src/**"],
             acceptance=["tests pass"],
-            cwd="/tmp/repo",
+            cwd="repo",
             speculative_parallelism=5,
         )
 
@@ -21,7 +21,7 @@ def test_durable_task_contract_defaults_to_provider_neutral_capabilities() -> No
         objective="Implement a bounded change",
         allowed_paths=["src/**"],
         acceptance=["tests pass"],
-        cwd="/tmp/repo",
+        cwd="repo",
     )
     assert task.required_capabilities == ["code", "filesystem", "git"]
     assert task.preferred_providers == []
