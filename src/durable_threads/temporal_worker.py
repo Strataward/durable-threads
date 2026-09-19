@@ -55,7 +55,7 @@ async def run_worker(*, address: str, namespace: str, task_queue: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(arg)
+    args = build_parser().parse_args(argv)
     asyncio.run(
         run_worker(
             address=args.address,
