@@ -25,8 +25,12 @@ def test_semantic_risk_cannot_lower_deterministic_floor() -> None:
     engine = StaticDecisionEngine(
         {
             "risk": _answer("risk", QuestionKind.CHOICE, "R1", 0.9, {"R1": 0.9}),
-            "delegate": _answer("delegate", QuestionKind.NOUL, True, 0.9, {"true": 0.9, "false": 0.1}),
-            "ambiguous": _answer("ambiguous", QuestionKind.NOUL, False, 0.9, {"true": 0.1, "false": 0.9}),
+            "delegate": _answer(
+                "delegate", QuestionKind.NOUL, True, 0.9, {"true": 0.9, "false": 0.1}
+            ),
+            "ambiguous": _answer(
+                "ambiguous", QuestionKind.NOUL, False, 0.9, {"true": 0.1, "false": 0.9}
+            ),
             "execution_shape": _answer(
                 "execution_shape", QuestionKind.CHOICE, "single_worker", 0.9, {"single_worker": 0.9}
             ),
