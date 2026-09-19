@@ -26,7 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     start = commands.add_parser("start", help="start a durable engineering task")
     _connection_args(start)
-    start.add_argument("--task-queue", default=os.getenv("DURABLE_THREADS_TASK_QUEUE", "durable-threads"))
+    start.add_argument(
+        "--task-queue",
+        default=os.getenv("DURABLE_THREADS_TASK_QUEUE", "durable-threads"),
+    )
     start.add_argument("--workflow-id")
     start.add_argument("--objective", required=True)
     start.add_argument("--allowed-path", action="append", required=True)
