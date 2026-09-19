@@ -241,7 +241,10 @@ class JevDecisionEngine:
                     provider_confidence=None,
                 )
             elif answer_type == "choice":
-                probabilities = {str(key): float(value) for key, value in answer.probabilities.items()}
+                probabilities = {
+                    str(key): float(value)
+                    for key, value in answer.probabilities.items()
+                }
                 answers[name] = DecisionAnswer(
                     name=name,
                     kind=QuestionKind.CHOICE,
