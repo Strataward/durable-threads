@@ -1,8 +1,30 @@
 """Deterministic contracts for durable multi-provider thread orchestration."""
 
-__version__ = "0.2.0"
+__version__ = "0.6.0"
 
 from .config import ConfigError, Roster, load_roster
+from .decisions import (
+    DecisionAnswer,
+    DecisionBatch,
+    DecisionEngine,
+    DecisionGate,
+    DecisionPolicy,
+    DecisionQuestion,
+    JevDecisionEngine,
+    QuestionKind,
+    StaticDecisionEngine,
+)
+from .execution import (
+    ExecutionBackend,
+    ExecutionError,
+    ExecutionRegistry,
+    ExecutionRequirements,
+    ExecutionSelection,
+    ExecutorDescriptor,
+    ExecutorPlugin,
+    default_execution_registry,
+)
+from .intelligence import ResultAssessment, TaskAssessment, assess_result, assess_task
 from .evidence import (
     EvidenceError,
     WorkerEvidence,
@@ -28,6 +50,24 @@ from .routing import ModelInfo, Resolution, RouteDecision, resolve_model, select
 
 __all__ = [
     "ConfigError",
+    "DecisionAnswer",
+    "DecisionBatch",
+    "DecisionEngine",
+    "DecisionGate",
+    "DecisionPolicy",
+    "DecisionQuestion",
+    "ExecutionBackend",
+    "ExecutionError",
+    "ExecutionRegistry",
+    "ExecutionRequirements",
+    "ExecutionSelection",
+    "ExecutorDescriptor",
+    "ExecutorPlugin",
+    "JevDecisionEngine",
+    "QuestionKind",
+    "ResultAssessment",
+    "StaticDecisionEngine",
+    "TaskAssessment",
     "EvidenceError",
     "DelegationPacket",
     "DispatchResult",
@@ -46,6 +86,9 @@ __all__ = [
     "WorkerEvidence",
     "build_packet",
     "build_invocation",
+    "assess_result",
+    "assess_task",
+    "default_execution_registry",
     "extract_session_id",
     "get_capabilities",
     "git_changed_paths",
