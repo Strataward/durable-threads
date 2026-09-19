@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from .decisions import DecisionBatch, DecisionEngine, DecisionPolicy, DecisionQuestion
 from .risk import RISK_LEVELS, classify_risk, meets_threshold, validate_risk
