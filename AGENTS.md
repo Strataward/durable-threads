@@ -15,6 +15,7 @@ python3 -m pytest
 ruff check .
 python3 -m compileall -q src scripts
 python3 scripts/validate_repo.py
+npm test
 ```
 
 When installation or packaging changes, verify current OpenAI plugin/skill documentation and update `docs/OPENAI_COMPATIBILITY.md` with the audit date.

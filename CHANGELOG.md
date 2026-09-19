@@ -9,6 +9,7 @@ The project uses semantic versioning after the 1.0 release.
 
 ### Added
 
+- Add a TypeScript SaaS control plane (`packages/policy`, `packages/executors`, `apps/worker`, `apps/api`, `apps/web`) and ADR 0002. Hosted execution uses sandboxed/headless adapters instead of local CLI binaries.
 - Add `HeuristicDecisionEngine` and `DURABLE_THREADS_DECISION_ENGINE` for deterministic offline decisions.
 - Add the `scripted` test executor behind `DURABLE_THREADS_ENABLE_SCRIPTED`.
 - Add Temporal workflow tests with a time-skipping environment.
@@ -16,7 +17,7 @@ The project uses semantic versioning after the 1.0 release.
 - Add the `ops/temporal` self-hosted development compose stack.
 - Add the `gate-recovery` benchmark scenario: an R4 task survives a worker SIGKILL at the human-review gate, accepts the approval signal with no worker running, and resumes from history.
 - Add `scripts/bench_primitives.py` to time the deterministic policy primitives in isolation.
-- Add ADR 0001 recording the decision to stay on Python instead of porting to Rust or WebAssembly, with the measured triggers that would reopen it.
+- Add ADR 0001 recording measured Python harness cost, later superseded by ADR 0002 for the hosted TypeScript control plane.
 
 ### Fixed
 

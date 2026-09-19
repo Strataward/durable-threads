@@ -1,0 +1,129 @@
+:root {
+  color: #102033;
+  background: #f4f1ea;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+h1,
+h2 {
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  letter-spacing: -0.03em;
+}
+
+h1 {
+  margin: 0 0 8px;
+}
+
+.lede {
+  max-width: 42rem;
+  color: #4c5a67;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 24px;
+  margin-top: 28px;
+}
+
+form,
+.panel {
+  background: #fffdf8;
+  border: 1px solid #d9d0c3;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid #cfc4b4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+}
+
+button {
+  margin-top: 16px;
+  margin-right: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #16324f;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #efe7da;
+  color: #16324f;
+}
+
+.task-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.task-list button {
+  width: 100%;
+  margin: 0;
+  text-align: left;
+  background: #fffdf8;
+  color: inherit;
+  border: 1px solid #d9d0c3;
+  border-radius: 12px;
+}
+
+.task-list button.active {
+  border-color: #16324f;
+}
+
+.status {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+pre {
+  overflow: auto;
+  background: #102033;
+  color: #f4f1ea;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

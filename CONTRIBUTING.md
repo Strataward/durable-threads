@@ -17,6 +17,8 @@ python3 -m pip install -e '.[dev]'
 python3 -m pytest
 ruff check .
 python3 scripts/validate_repo.py
+npm install
+npm test
 ```
 
 Keep changes small. Add a test for changed behaviour. Update the relevant reference document when operating policy changes.

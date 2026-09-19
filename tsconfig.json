@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "packages/**/*.ts",
+    "apps/api/src/**/*.ts",
+    "apps/worker/src/**/*.ts",
+    "apps/api/tests/**/*.ts",
+    "apps/worker/tests/**/*.ts",
+    "packages/**/*.test.ts"
+  ],
+  "exclude": ["node_modules", "**/dist", "apps/web"]
+}

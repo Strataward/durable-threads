@@ -1,0 +1,34 @@
+{
+  "name": "durable-threads",
+  "private": true,
+  "version": "0.6.0",
+  "description": "Risk-aware policy for native coding agents, plus a TypeScript SaaS control plane.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev -w @durable-threads/api",
+    "dev:web": "npm run dev -w @durable-threads/web",
+    "dev:worker": "npm run start -w @durable-threads/worker"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "protobufjs@8.8.0": true,
+    "protobufjs@7.6.6": true,
+    "@swc/core@1.16.2": true,
+    "fsevents@2.3.3": true
+  }
+}

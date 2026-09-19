@@ -1,7 +1,7 @@
 # ADR 0001: Should Durable Threads move to Rust or WebAssembly?
 
 Date: 2026-09-19
-Status: Accepted
+Status: Superseded by [ADR 0002](0002-typescript-saas.md)
 Evidence: [Durable mode overhead benchmark](../benchmarks/2026-09-19-durable-mode-overhead.md)
 
 ## Context

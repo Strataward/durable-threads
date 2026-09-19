@@ -270,6 +270,8 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
 - [Durable mode overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
 - [ADR 0001: Rust / WebAssembly decision](docs/adr/0001-rust-wasm.md)
+- [ADR 0002: TypeScript SaaS control plane](docs/adr/0002-typescript-saas.md)
+- [Hosted SaaS](docs/SAAS.md)
 - [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
 
 ## Compatibility history
@@ -286,9 +288,11 @@ pytest
 ruff check .
 python -m compileall -q src scripts
 python scripts/validate_repo.py
+npm install
+npm test
 ```
 
-Durable mode: the four checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`.
+Durable mode: the Python checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`. The hosted TypeScript control plane is documented in [docs/SAAS.md](docs/SAAS.md).
 
 Durable Threads is alpha software. Codex plugin, subagent, model, and worktree surfaces can change quickly, so compatibility documentation is dated and should be rechecked against current upstream sources.
 

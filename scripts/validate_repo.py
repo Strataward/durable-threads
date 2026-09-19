@@ -32,7 +32,7 @@ def _validate_markdown(root: Path) -> None:
     link_re = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
     for path in sorted(root.rglob("*.md")):
-        if any(part in {".git", ".venv", "dist"} for part in path.parts):
+        if any(part in {".git", ".venv", "dist", "node_modules"} for part in path.parts):
             continue
 
         text = path.read_text(encoding="utf-8")
@@ -122,6 +122,20 @@ def main() -> int:
         json.loads(path.read_text(encoding="utf-8"))
     for path in plugin_root.rglob("*.schema.json"):
         json.loads(path.read_text(encoding="utf-8"))
+
+    skill_result = plugin_root / "skills" / "durable-threads" / "references" / "RESULT.schema.json"
+    contracts_result = root / "packages" / "contracts" / "schemas" / "result.schema.json"
+    require(
+        skill_result.read_text(encoding="utf-8") == contracts_result.read_text(encoding="utf-8"),
+        "packages/contracts RESULT schema must match the skill schema",
+    )
+    require(
+        (root / "schemas" / "roster.schema.json").read_text(encoding="utf-8")
+        == (root / "packages" / "contracts" / "schemas" / "roster.schema.json").read_text(
+            encoding="utf-8"
+        ),
+        "packages/contracts roster schema must match schemas/roster.schema.json",
+    )
 
     _validate_markdown(root)
 

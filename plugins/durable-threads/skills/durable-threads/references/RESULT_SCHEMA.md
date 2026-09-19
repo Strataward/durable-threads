@@ -4,7 +4,7 @@ A worker result must use this shape:
 
 ```text
 Status: complete | blocked | failed
-Provider: codex | claude | grok | cursor
+Provider: executor id matching ^[a-z0-9][a-z0-9._-]{0,63}$
 Changed paths:
 - path/to/file
 Checks:

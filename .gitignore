@@ -17,3 +17,11 @@ build/
 examples/local-roster.json
 .codex-thread-ledger/
 uv.lock
+
+# TypeScript monorepo
+node_modules/
+packages/*/dist/
+apps/*/dist/
+*.tsbuildinfo
+.vite/
+.playwright-mcp/

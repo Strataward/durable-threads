@@ -1,0 +1,24 @@
+{
+  "name": "@durable-threads/worker",
+  "version": "0.6.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./src/worker.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node --import tsx src/worker.ts"
+  },
+  "dependencies": {
+    "@durable-threads/contracts": "0.6.0",
+    "@durable-threads/executors": "0.6.0",
+    "@durable-threads/policy": "0.6.0",
+    "@temporalio/activity": "^1.13.1",
+    "@temporalio/client": "^1.13.1",
+    "@temporalio/worker": "^1.13.1",
+    "@temporalio/workflow": "^1.13.1"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "^1.13.1",
+    "tsx": "^4.20.5"
+  }
+}
