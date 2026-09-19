@@ -4,6 +4,29 @@ Last verified: **2026-09-19**.
 
 Durable Threads has one normal distribution path: install the **Durable Threads plugin**. The plugin bundles the canonical `durable-threads` skill, so plugin users do not install a second copy of the skill.
 
+## Quick start: Install + delegate your first task
+
+### 1. Install the plugin
+
+```bash
+codex plugin marketplace add Strataward/durable-threads --ref main
+codex plugin add durable-threads@strataward
+```
+
+### 2. Start a new Codex session
+
+The bundled skill loads automatically. Your first prompt can be natural:
+
+```text
+Use Durable Threads to implement refresh-token rotation for my service.
+```
+
+Durable Threads will decide whether delegation helps, classify risk R0–R4, freeze a bounded implementation contract, choose the native Codex role (`explorer` for read-heavy, `worker` for execution), pick an economical model, execute and verify deterministically, and report results — escalating from evidence, not prestige.
+
+### 3. Verify the result
+
+Durable Threads should report changed paths, exact checks and results, and remaining concerns. When supported, use `references/RESULT.schema.json`.
+
 ## Codex CLI — recommended
 
 This repository exposes a repo marketplace at `.agents/plugins/marketplace.json` and the plugin under `plugins/durable-threads`.

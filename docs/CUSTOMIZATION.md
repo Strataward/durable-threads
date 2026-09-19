@@ -100,11 +100,11 @@ The helper is intentionally outside the quick-start path.
 
 Prefer durable roles over volatile names:
 
-- `efficient` for sustained bounded execution;
-- `balanced` for harder general reasoning;
-- `frontier` for consequential decisions and independent review.
+- `efficient` for sustained bounded execution
+- `balanced` for harder general reasoning
+- `frontier` for consequential decisions and independent review
 
-Reasoning effort is a separate dimension. An efficient model at high/XHigh reasoning can be a strong implementer when the contract is well specified. Raise frontier effort when consequence or observed failure justifies it—not because a task sounds important.
+Reasoning effort is a separate dimension. An efficient model at high/XHigh reasoning can be a strong implementer when the contract is well specified. Raise frontier effort when consequence or observed failure justifies it — not because a task sounds important.
 
 If the runtime exposes a live catalog, resolve against it. Pin a concrete model ID only when you intentionally want a reproducible experiment.
 
@@ -113,9 +113,9 @@ If the runtime exposes a live catalog, resolve against it. Pin a concrete model 
 ```mermaid
 flowchart LR
     R["Risk class"] --> G{"Tier"}
-    G -->|"R0-R1"| D["Deterministic checks"]
-    G -->|"R2"| I["Integration review"]
-    G -->|"R3-R4"| F["Frontier / specialist review"]
+    G -->|R0-R1| D["Deterministic checks"]
+    G -->|R2| I["Integration review"]
+    G -->|R3-R4| F["Frontier / specialist review"]
 ```
 
 Override risk explicitly when repository facts are stronger than the classifier.
@@ -126,7 +126,9 @@ Use the compact rule:
 
 > **Subagents for parallel cognition. Worktrees for parallel mutation.**
 
-Parallel explorers/reviewers are usually cheap to coordinate. Parallel writers should have disjoint ownership and isolated checkouts when supported. Overlapping writers should be serialized.
+Parallelize independent explorers, reviewers, and other read-heavy work freely within the runtime's configured concurrency limit. For writers, assign explicit ownership. Do not run overlapping writers in parallel. When several independent writers are useful and worktree isolation exists, prefer one checkout per writer.
+
+Do not treat a worktree as proof that two changes are semantically independent; integration still belongs to the planner.
 
 ## Multi-provider setup
 

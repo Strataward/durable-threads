@@ -51,8 +51,6 @@ Sources:
 
 Current Codex includes built-in agent roles including `explorer` and `worker`. The runtime applies role-specific configuration to spawned children and exposes project/user-defined role configuration.
 
-The built-in guidance describes `explorer` as a role for specific codebase questions and encourages parallel explorers for distinct independent questions. It describes `worker` as the role for implementation/production work and emphasizes explicit ownership when several workers operate concurrently.
-
 **Durable Threads consequence:** native Codex subagents are the preferred default execution mechanism. Durable Threads maps discovery to `explorer`, bounded implementation/debugging to `worker`, and independent review to a read-only custom/default role.
 
 Source:
@@ -63,9 +61,9 @@ Source:
 
 Current Codex configuration includes agent-level controls such as:
 
-- `agents.default_subagent_model`;
-- `agents.default_subagent_reasoning_effort`;
-- `agents.max_concurrent_threads_per_session`.
+- `agents.default_subagent_model`
+- `agents.default_subagent_reasoning_effort`
+- `agents.max_concurrent_threads_per_session`
 
 **Durable Threads consequence:** model/effort and fan-out policy can compile into native runtime controls instead of requiring a second scheduler.
 
@@ -111,15 +109,15 @@ Sources:
 
 The following are project choices or empirical strategies:
 
-- efficient high/XHigh implementation as a preferred workhorse strategy;
-- R0-R4 consequence classification;
-- frontier/specialist review at R3+ by default;
-- the sleeping-orchestrator invariant;
-- one focused correction by default;
-- escalation from efficient -> balanced -> frontier;
-- `explorer`/`worker` role mapping for our workflow;
-- the worktree isolation rule for parallel writers;
-- any claim about relative quota efficiency or task-level model performance.
+- efficient high/XHigh implementation as a preferred workhorse strategy
+- R0–R4 consequence classification
+- frontier/specialist review at R3+ by default
+- the sleeping-orchestrator invariant
+- one focused correction by default
+- escalation from efficient -> balanced -> frontier
+- `explorer`/`worker` role mapping for our workflow
+- the worktree isolation rule for parallel writers
+- any claim about relative quota efficiency or task-level model performance
 
 The docs should label these as policy, recommendation, or observed behavior rather than attributing them to OpenAI.
 
