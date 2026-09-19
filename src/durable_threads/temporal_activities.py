@@ -103,7 +103,8 @@ CONSTRAINTS
 {constraints}
 
 EXECUTION RULES
-- Work only inside the allowed paths unless a generated lockfile or required metadata change is unavoidable; report any such exception.
+- Work only inside the allowed paths unless a generated lockfile or required metadata
+  change is unavoidable; report any such exception.
 - Do not expose credentials, environment secrets, or private data.
 - Run focused deterministic checks before claiming completion.
 - Do not claim a check passed unless you executed it.
