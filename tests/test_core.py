@@ -328,6 +328,36 @@ def test_worker_evidence_requires_checks_and_matches_the_diff() -> None:
     assert verified.changed_paths == ("src/example.py",)
 
 
+def test_worker_evidence_accepts_extensible_provider_ids() -> None:
+    result = parse_worker_result(
+        json.dumps(
+            {
+                "status": "complete",
+                "provider": "acme-runner",
+                "changedPaths": ["src/example.py"],
+                "checks": ["focused check passed"],
+                "remainingConcerns": ["None known"],
+            }
+        )
+    )
+
+    assert validate_evidence(result, allowed_paths=["src/**"]).provider == "acme-runner"
+
+    result = parse_worker_result(
+        json.dumps(
+            {
+                "status": "complete",
+                "provider": "Bad Provider!",
+                "changedPaths": ["src/example.py"],
+                "checks": ["focused check passed"],
+                "remainingConcerns": ["None known"],
+            }
+        )
+    )
+    with pytest.raises(EvidenceError, match="provider id is invalid"):
+        validate_evidence(result, allowed_paths=["src/**"])
+
+
 @pytest.mark.parametrize(
     "path",
     ["../secret.txt", str(Path.cwd() / "secret.txt"), "docs/../secret.txt"],

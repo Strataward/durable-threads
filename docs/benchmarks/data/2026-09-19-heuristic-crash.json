@@ -1,0 +1,55 @@
+{
+  "date": "2026-09-19T17:59:57+00:00",
+  "delaySeconds": 0.0,
+  "engine": "heuristic",
+  "results": [
+    {
+      "attempts": 1,
+      "childPhases": {
+        "run_execution_activity:timed_out": 45.002354
+      },
+      "clientWall": 45.26207134100002,
+      "historyTotal": 45.247129,
+      "intervention": "human_review",
+      "killedAfter": 2.2706584029999703,
+      "status": "review_required",
+      "verificationStatus": "child_failure",
+      "workflowId": "dt-crash-66a45f1fda35",
+      "writerReExecuted": false
+    },
+    {
+      "attempts": 1,
+      "childPhases": {
+        "run_execution_activity:timed_out": 45.002093
+      },
+      "clientWall": 45.236280121999926,
+      "historyTotal": 45.22439,
+      "intervention": "human_review",
+      "killedAfter": 2.263745321999977,
+      "status": "review_required",
+      "verificationStatus": "child_failure",
+      "workflowId": "dt-crash-eee8aae269f3",
+      "writerReExecuted": false
+    }
+  ],
+  "runs": 2,
+  "scenario": "crash",
+  "summary": {
+    "statuses": [
+      "review_required"
+    ],
+    "timeToEscalation": {
+      "max": 45.26207134100002,
+      "mean": 45.249175731499975,
+      "median": 45.249175731499975,
+      "min": 45.236280121999926,
+      "p95": 45.26207134100002
+    },
+    "writerReExecuted": false
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "dt-bench-115ad9c3"
+  }
+}

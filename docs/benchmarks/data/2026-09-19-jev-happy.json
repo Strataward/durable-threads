@@ -1,0 +1,478 @@
+{
+  "date": "2026-09-19T17:59:40+00:00",
+  "delaySeconds": 0.0,
+  "engine": "jev",
+  "results": [
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.16131662999998753,
+          "assess_task": 0.23242576699999518,
+          "execute": 0.0003362779999633858,
+          "verify": 0.004018889999997555
+        },
+        "risk": "R1",
+        "total": 0.3980999200000497
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.116288,
+          "run_execution_activity": 0.008775,
+          "verify_execution_activity": 0.008244
+        },
+        "clientWall": 0.4264453619999813,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.421373,
+        "parentPhases": {
+          "assess_task_activity": 0.135832,
+          "child_workflow": 0.210466,
+          "route_executors_activity": 0.007586
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-e06de96c9dbc"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.24799389300005714,
+          "assess_task": 0.14042421800002103,
+          "execute": 0.00036456499992709723,
+          "verify": 0.004110871999955634
+        },
+        "risk": "R1",
+        "total": 0.39289561300006426
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.117059,
+          "run_execution_activity": 0.006194,
+          "verify_execution_activity": 0.008546
+        },
+        "clientWall": 0.3996966820000125,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.393875,
+        "parentPhases": {
+          "assess_task_activity": 0.113824,
+          "child_workflow": 0.206694,
+          "route_executors_activity": 0.00678
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-50c0d798bea9"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.10144825099996524,
+          "assess_task": 0.12004505499999141,
+          "execute": 0.0003964420000102109,
+          "verify": 0.00444769599994288
+        },
+        "risk": "R1",
+        "total": 0.2263399890000528
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.121077,
+          "run_execution_activity": 0.006627,
+          "verify_execution_activity": 0.008202
+        },
+        "clientWall": 0.4816788699999961,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.472761,
+        "parentPhases": {
+          "assess_task_activity": 0.188954,
+          "child_workflow": 0.209989,
+          "route_executors_activity": 0.006108
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-f9a1fff8c5bc"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.12418721500000629,
+          "assess_task": 0.20394583699999203,
+          "execute": 0.0003838150000774476,
+          "verify": 0.00444060500001342
+        },
+        "risk": "R1",
+        "total": 0.332959929000026
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.080625,
+          "run_execution_activity": 0.007363,
+          "verify_execution_activity": 0.007895
+        },
+        "clientWall": 0.42112551200000325,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.416104,
+        "parentPhases": {
+          "assess_task_activity": 0.159295,
+          "child_workflow": 0.178744,
+          "route_executors_activity": 0.005867
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-d60bef7374c8"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.10054231400010849,
+          "assess_task": 0.13310822399989775,
+          "execute": 0.00043571300000166957,
+          "verify": 0.004458419999991747
+        },
+        "risk": "R1",
+        "total": 0.23854660799997873
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.10375,
+          "run_execution_activity": 0.006752,
+          "verify_execution_activity": 0.008179
+        },
+        "clientWall": 0.4519943999999896,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.444085,
+        "parentPhases": {
+          "assess_task_activity": 0.181516,
+          "child_workflow": 0.191343,
+          "route_executors_activity": 0.005879
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-c1dfe7dd2a0f"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.17951673400000345,
+          "assess_task": 0.1441506239999626,
+          "execute": 0.0003446610000992223,
+          "verify": 0.003937111000027471
+        },
+        "risk": "R1",
+        "total": 0.32795126099995286
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.06717,
+          "run_execution_activity": 0.007312,
+          "verify_execution_activity": 0.00868
+        },
+        "clientWall": 0.38660663300004217,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.378687,
+        "parentPhases": {
+          "assess_task_activity": 0.142645,
+          "child_workflow": 0.158301,
+          "route_executors_activity": 0.00811
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-bc0520e89947"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.16002097399996273,
+          "assess_task": 0.10403235900002983,
+          "execute": 0.00033917099995051103,
+          "verify": 0.003880088000073556
+        },
+        "risk": "R1",
+        "total": 0.2682747340001015
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.113817,
+          "run_execution_activity": 0.005744,
+          "verify_execution_activity": 0.007654
+        },
+        "clientWall": 0.4563378999999941,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.448177,
+        "parentPhases": {
+          "assess_task_activity": 0.173849,
+          "child_workflow": 0.201364,
+          "route_executors_activity": 0.006125
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-b8873c6fc5f8"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.12350577400002294,
+          "assess_task": 0.09594424400006574,
+          "execute": 0.0003282700000681871,
+          "verify": 0.0038820479999230884
+        },
+        "risk": "R1",
+        "total": 0.22366240500002732
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.101662,
+          "run_execution_activity": 0.005618,
+          "verify_execution_activity": 0.007909
+        },
+        "clientWall": 0.386056606000011,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.381115,
+        "parentPhases": {
+          "assess_task_activity": 0.117168,
+          "child_workflow": 0.192124,
+          "route_executors_activity": 0.00627
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-01ee8acfa5d5"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.10159862500006511,
+          "assess_task": 0.11178075399993759,
+          "execute": 0.0003549799999973402,
+          "verify": 0.003836938999938866
+        },
+        "risk": "R1",
+        "total": 0.21757337600001847
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.116066,
+          "run_execution_activity": 0.006637,
+          "verify_execution_activity": 0.008465
+        },
+        "clientWall": 0.43921083300006103,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.428922,
+        "parentPhases": {
+          "assess_task_activity": 0.150582,
+          "child_workflow": 0.206556,
+          "route_executors_activity": 0.006979
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-92407dd8d694"
+      }
+    },
+    {
+      "direct": {
+        "accepted": false,
+        "phases": {
+          "assess_result": 0.10438108200003171,
+          "assess_task": 0.1506579930000953,
+          "execute": 0.000350538000020606,
+          "verify": 0.003949988000044868
+        },
+        "risk": "R1",
+        "total": 0.25934186200004206
+      },
+      "temporal": {
+        "attempts": 1,
+        "childPhases": {
+          "assess_result_activity": 0.146741,
+          "run_execution_activity": 0.005772,
+          "verify_execution_activity": 0.009949
+        },
+        "clientWall": 0.45986755399997037,
+        "decisionEngine": "typesafe:system-one",
+        "historyEvents": 26,
+        "historyTotal": 0.448276,
+        "parentPhases": {
+          "assess_task_activity": 0.125661,
+          "child_workflow": 0.242978,
+          "route_executors_activity": 0.007195
+        },
+        "risk": "R1",
+        "status": "review_required",
+        "workflowId": "dt-bench-06bf1c3485fa"
+      }
+    }
+  ],
+  "runs": 10,
+  "scenario": "happy",
+  "summary": {
+    "directPhases": {
+      "assess_result": {
+        "max": 0.24799389300005714,
+        "mean": 0.14045114920002105,
+        "median": 0.12384649450001461,
+        "min": 0.10054231400010849,
+        "p95": 0.24799389300005714
+      },
+      "assess_task": {
+        "max": 0.23242576699999518,
+        "mean": 0.14365150749999883,
+        "median": 0.1367662209999594,
+        "min": 0.09594424400006574,
+        "p95": 0.23242576699999518
+      },
+      "execute": {
+        "max": 0.00043571300000166957,
+        "mean": 0.00036344330001156775,
+        "median": 0.0003527590000089731,
+        "min": 0.0003282700000681871,
+        "p95": 0.00043571300000166957
+      },
+      "verify": {
+        "max": 0.004458419999991747,
+        "mean": 0.004096265699990909,
+        "median": 0.0039844390000212115,
+        "min": 0.003836938999938866,
+        "p95": 0.004458419999991747
+      }
+    },
+    "directTotal": {
+      "max": 0.3980999200000497,
+      "mean": 0.28856456970003136,
+      "median": 0.2638082980000718,
+      "min": 0.21757337600001847,
+      "p95": 0.3980999200000497
+    },
+    "historyEvents": {
+      "max": 26,
+      "mean": 26.0,
+      "median": 26.0,
+      "min": 26,
+      "p95": 26
+    },
+    "orchestrationOverhead": {
+      "max": 0.2553388809999433,
+      "mean": 0.14233746549997478,
+      "median": 0.17522868349993814,
+      "min": 0.0068010689999482565,
+      "p95": 0.2553388809999433
+    },
+    "statuses": [
+      "review_required"
+    ],
+    "temporalClientWall": {
+      "max": 0.4816788699999961,
+      "mean": 0.43090203520000614,
+      "median": 0.43282809750002116,
+      "min": 0.386056606000011,
+      "p95": 0.4816788699999961
+    },
+    "temporalHistoryTotal": {
+      "max": 0.472761,
+      "mean": 0.4233375,
+      "median": 0.4251475,
+      "min": 0.378687,
+      "p95": 0.472761
+    },
+    "temporalPhases": {
+      "assess_result_activity": {
+        "max": 0.146741,
+        "mean": 0.1084255,
+        "median": 0.1149415,
+        "min": 0.06717,
+        "p95": 0.146741
+      },
+      "assess_task_activity": {
+        "max": 0.188954,
+        "mean": 0.1489326,
+        "median": 0.1466135,
+        "min": 0.113824,
+        "p95": 0.188954
+      },
+      "child_workflow": {
+        "max": 0.242978,
+        "mean": 0.1998559,
+        "median": 0.20395999999999997,
+        "min": 0.158301,
+        "p95": 0.242978
+      },
+      "route_executors_activity": {
+        "max": 0.00811,
+        "mean": 0.0066899,
+        "median": 0.0065249999999999996,
+        "min": 0.005867,
+        "p95": 0.00811
+      },
+      "run_execution_activity": {
+        "max": 0.008775,
+        "mean": 0.006679399999999999,
+        "median": 0.006632,
+        "min": 0.005618,
+        "p95": 0.008775
+      },
+      "verify_execution_activity": {
+        "max": 0.009949,
+        "mean": 0.0083723,
+        "median": 0.008223,
+        "min": 0.007654,
+        "p95": 0.009949
+      }
+    }
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "dt-bench-684f6c2c"
+  },
+  "warmup": {
+    "attempts": 1,
+    "childPhases": {
+      "assess_result_activity": 0.126007,
+      "run_execution_activity": 0.006554,
+      "verify_execution_activity": 0.009594
+    },
+    "clientWall": 0.5948830999999473,
+    "decisionEngine": "typesafe:system-one",
+    "historyEvents": 26,
+    "historyTotal": 0.5863,
+    "parentPhases": {
+      "assess_task_activity": 0.282051,
+      "child_workflow": 0.223654,
+      "route_executors_activity": 0.006443
+    },
+    "risk": "R1",
+    "status": "review_required",
+    "workflowId": "dt-bench-bf4e921f48b9"
+  }
+}

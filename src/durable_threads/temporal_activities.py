@@ -7,14 +7,14 @@ execution, filesystem/git inspection, and provider availability probes.
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import Any
 
 from temporalio import activity
 
-from .decisions import JevDecisionEngine
+from .decisions import decision_engine_from_env
 from .evidence import EvidenceError, git_changed_paths, parse_worker_result, validate_evidence
 from .execution import (
+    ExecutionError,
     ExecutionRequest,
     ExecutionRequirements,
     default_execution_registry,
@@ -29,18 +29,9 @@ from .temporal_contracts import (
 )
 
 
-def _jev_engine() -> JevDecisionEngine:
-    return JevDecisionEngine(
-        model=os.getenv("DURABLE_THREADS_JEV_MODEL", "jev-latest"),
-        api_key=os.getenv("TYPESAFE_API_KEY") or None,
-        base_url=os.getenv("TYPESAFE_BASE_URL") or None,
-        timeout_seconds=float(os.getenv("DURABLE_THREADS_JEV_TIMEOUT_SECONDS", "30")),
-    )
-
-
 @activity.defn
 async def assess_task_activity(task: TaskRunInput) -> dict[str, Any]:
-    engine = _jev_engine()
+    engine = decision_engine_from_env()
     assessment = await assess_task(
         engine,
         objective=task.objective,
@@ -78,7 +69,10 @@ def route_executors_activity(request: RouteExecutorsInput) -> list[dict[str, Any
     mutating_checkout = bool({"filesystem", "git"} & set(task.required_capabilities))
     if request.assessment.get("executionShape") == "parallel_workers" and not mutating_checkout:
         count = task.speculative_parallelism
-    selections = registry.select(requirements, count=count, available_only=True)
+    try:
+        selections = registry.select(requirements, count=count, available_only=True)
+    except ExecutionError:
+        return []
     return [selection.to_dict() for selection in selections]
 
 
@@ -175,7 +169,7 @@ def verify_execution_activity(request: VerificationInput) -> dict[str, Any]:
             "status": verified.status,
             "changedPaths": list(verified.changed_paths),
             "checks": list(verified.checks),
-            "remainingConcerns": list(verified.remaining_concerns),
+            "remainingConcerns": list(verified.concerns),
             "actualPaths": list(actual_paths),
             "error": None,
         }
@@ -193,7 +187,7 @@ def verify_execution_activity(request: VerificationInput) -> dict[str, Any]:
 
 @activity.defn
 async def assess_result_activity(request: ResultDecisionInput) -> dict[str, Any]:
-    engine = _jev_engine()
+    engine = decision_engine_from_env()
     verification = request.verification
     assessment = await assess_result(
         engine,

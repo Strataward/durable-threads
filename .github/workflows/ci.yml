@@ -68,7 +68,14 @@ jobs:
           PY
       - name: Run durable-mode unit tests
         run: |
-          python -m pytest             tests/test_decision_intelligence.py             tests/test_execution_registry.py             tests/test_temporal_contracts.py
+          python -m pytest \
+            tests/test_decision_intelligence.py \
+            tests/test_execution_registry.py \
+            tests/test_temporal_contracts.py \
+            tests/test_heuristic_engine.py \
+            tests/test_scripted_executor.py \
+            tests/test_temporal_workflows.py \
+            tests/test_temporal_worker.py
 
   package:
     name: Release archive

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from temporalio.client import Client
 from temporalio.worker import Worker
@@ -34,24 +35,34 @@ def build_parser() -> argparse.ArgumentParser:
         "--task-queue",
         default=os.getenv("DURABLE_THREADS_TASK_QUEUE", "durable-threads"),
     )
+    parser.add_argument(
+        "--max-sync-activities",
+        type=int,
+        default=int(os.getenv("DURABLE_THREADS_MAX_SYNC_ACTIVITIES", "8")),
+        help="thread pool size for routing and verification activities",
+    )
     return parser
 
 
-async def run_worker(*, address: str, namespace: str, task_queue: str) -> None:
+async def run_worker(
+    *, address: str, namespace: str, task_queue: str, max_sync_activities: int = 8
+) -> None:
     client = await Client.connect(address, namespace=namespace)
-    worker = Worker(
-        client,
-        task_queue=task_queue,
-        workflows=[DurableTaskWorkflow, AgentExecutionWorkflow],
-        activities=[
-            assess_task_activity,
-            route_executors_activity,
-            run_execution_activity,
-            verify_execution_activity,
-            assess_result_activity,
-        ],
-    )
-    await worker.run()
+    with ThreadPoolExecutor(max_workers=max_sync_activities) as activity_executor:
+        worker = Worker(
+            client,
+            task_queue=task_queue,
+            workflows=[DurableTaskWorkflow, AgentExecutionWorkflow],
+            activities=[
+                assess_task_activity,
+                route_executors_activity,
+                run_execution_activity,
+                verify_execution_activity,
+                assess_result_activity,
+            ],
+            activity_executor=activity_executor,
+        )
+        await worker.run()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,6 +72,7 @@ def main(argv: list[str] | None = None) -> int:
             address=args.address,
             namespace=args.namespace,
             task_queue=args.task_queue,
+            max_sync_activities=args.max_sync_activities,
         )
     )
     return 0
