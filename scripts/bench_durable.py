@@ -13,6 +13,9 @@ Scenarios:
 - ``crash``: the worker process is SIGKILLed mid-execution; a replacement
   worker must drive the workflow to a deterministic escalation without
   re-running the writer.
+- ``gate-recovery``: an R4 task parks at the human-review gate, the worker is
+  SIGKILLed, the approval signal is delivered while no worker exists, and a
+  replacement worker must resume from history and finish the task.
 
 Usage:
 
@@ -43,16 +46,18 @@ from typing import Any
 
 from temporalio.api.enums.v1 import EventType
 from temporalio.client import Client, WorkflowHandle
+from temporalio.service import RPCError
 
 from durable_threads.decisions import decision_engine_from_env
 from durable_threads.evidence import git_changed_paths, parse_worker_result, validate_evidence
 from durable_threads.execution import ExecutionRequest
 from durable_threads.intelligence import assess_result, assess_task
 from durable_threads.scripted import ScriptedExecutionBackend
-from durable_threads.temporal_contracts import TaskRunInput
+from durable_threads.temporal_contracts import ReviewDecision, TaskRunInput
 from durable_threads.temporal_workflows import DurableTaskWorkflow
 
 OBJECTIVE = "Add a helper that returns missing page indexes in the shared page-index module"
+GATE_OBJECTIVE = "Migrate the control plane to a multi-region architecture"
 ALLOWED = ["src/**"]
 ACCEPTANCE = ["Focused tests pass", "No files outside src/ change"]
 WRITE_PATH = "src/page_index.py"
@@ -107,9 +112,9 @@ def make_repo(root: Path, scenario: str, *, delay_seconds: float) -> Path:
     return repo
 
 
-def task_input(repo: Path) -> TaskRunInput:
+def task_input(repo: Path, *, objective: str = OBJECTIVE) -> TaskRunInput:
     return TaskRunInput(
-        objective=OBJECTIVE,
+        objective=objective,
         allowed_paths=ALLOWED,
         acceptance=ACCEPTANCE,
         cwd=str(repo),
@@ -194,6 +199,11 @@ async def phase_durations(handle: WorkflowHandle) -> dict[str, Any]:
             scheduled = by_id[attrs.scheduled_event_id]
             name = scheduled.activity_task_scheduled_event_attributes.activity_type.name
             phases[f"{name}:timed_out"] = (_ts(event) - _ts(scheduled)).total_seconds()
+        elif kind == EventType.EVENT_TYPE_WORKFLOW_TASK_TIMED_OUT:
+            attrs = event.workflow_task_timed_out_event_attributes
+            scheduled = by_id[attrs.scheduled_event_id]
+            delta = (_ts(event) - _ts(scheduled)).total_seconds()
+            phases["workflow_task:timed_out"] = phases.get("workflow_task:timed_out", 0.0) + delta
         elif kind == EventType.EVENT_TYPE_CHILD_WORKFLOW_EXECUTION_STARTED:
             attrs = event.child_workflow_execution_started_event_attributes
             children.append(attrs.workflow_execution.workflow_id)
@@ -359,6 +369,81 @@ async def run_crash(
     }
 
 
+async def run_gate_recovery(
+    client: Client,
+    *,
+    task_queue: str,
+    repo: Path,
+    worker_env: dict[str, str],
+    address: str,
+    namespace: str,
+) -> dict[str, Any]:
+    worker = WorkerProcess(
+        address=address, namespace=namespace, task_queue=task_queue, env=worker_env
+    )
+    worker.start()
+    workflow_id = f"dt-gate-{uuid.uuid4().hex[:12]}"
+    t0 = time.perf_counter()
+    handle = await client.start_workflow(
+        DurableTaskWorkflow.run,
+        task_input(repo, objective=GATE_OBJECTIVE),
+        id=workflow_id,
+        task_queue=task_queue,
+    )
+    try:
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            status = await handle.query(DurableTaskWorkflow.status)
+            if status.get("reviewPending"):
+                break
+            await asyncio.sleep(0.2)
+        else:
+            raise RuntimeError("workflow never reached the human-review gate")
+    finally:
+        worker.kill()
+    gate_at = time.perf_counter() - t0
+    await asyncio.sleep(1.0)
+
+    # Only the server is involved here: describe and signal need no worker.
+    description = await handle.describe()
+    status_while_down = description.status.name
+    history_while_down = description.raw_description.workflow_execution_info.history_length
+    await handle.signal(DurableTaskWorkflow.review, ReviewDecision(approved=True, note="bench"))
+
+    replacement = WorkerProcess(
+        address=address, namespace=namespace, task_queue=task_queue, env=worker_env
+    )
+    restart_at = time.perf_counter()
+    replacement.start()
+    replayed_phase = None
+    try:
+        for _ in range(100):
+            try:
+                replayed_phase = (await handle.query(DurableTaskWorkflow.status)).get("phase")
+                break
+            except RPCError:
+                await asyncio.sleep(0.2)
+        result = await handle.result()
+    finally:
+        replacement.stop()
+    wall = time.perf_counter() - t0
+    history = await phase_durations(handle)
+    return {
+        "workflowId": workflow_id,
+        "status": result.status,
+        "risk": result.final_risk,
+        "attempts": len(result.attempts),
+        "gateReachedAfter": gate_at,
+        "statusWhileWorkerDown": status_while_down,
+        "historyLengthWhileWorkerDown": history_while_down,
+        "phaseAfterRestart": replayed_phase,
+        "resumeToCompletion": wall - (restart_at - t0),
+        "clientWall": wall,
+        "historyEvents": history["events"],
+        "parentPhases": history["phases"],
+    }
+
+
 def summarize(values: list[float]) -> dict[str, float]:
     if not values:
         return {}
@@ -400,7 +485,20 @@ async def main_async(args: argparse.Namespace) -> int:
         "results": [],
     }
     try:
-        if args.scenario == "crash":
+        if args.scenario == "gate-recovery":
+            for _ in range(args.runs):
+                repo = make_repo(root, "happy", delay_seconds=args.delay)
+                report["results"].append(
+                    await run_gate_recovery(
+                        client,
+                        task_queue=task_queue,
+                        repo=repo,
+                        worker_env=env,
+                        address=args.address,
+                        namespace=args.namespace,
+                    )
+                )
+        elif args.scenario == "crash":
             for _ in range(args.runs):
                 repo = make_repo(root, "happy", delay_seconds=max(args.delay, 15.0))
                 report["results"].append(
@@ -436,7 +534,22 @@ async def main_async(args: argparse.Namespace) -> int:
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
-    if args.scenario != "crash":
+    if args.scenario == "gate-recovery":
+        report["summary"] = {
+            "statuses": sorted({r["status"] for r in report["results"]}),
+            "risks": sorted({r["risk"] for r in report["results"]}),
+            "gateReachedAfter": summarize([r["gateReachedAfter"] for r in report["results"]]),
+            "resumeToCompletion": summarize([r["resumeToCompletion"] for r in report["results"]]),
+            "clientWall": summarize([r["clientWall"] for r in report["results"]]),
+            "statusWhileWorkerDown": sorted(
+                {r["statusWhileWorkerDown"] for r in report["results"]}
+            ),
+            "phaseAfterRestart": sorted({str(r["phaseAfterRestart"]) for r in report["results"]}),
+            "workflowTaskTimedOut": summarize(
+                [r["parentPhases"].get("workflow_task:timed_out", 0.0) for r in report["results"]]
+            ),
+        }
+    elif args.scenario != "crash":
         walls = [r["temporal"]["clientWall"] for r in report["results"]]
         hist = [r["temporal"]["historyTotal"] for r in report["results"]]
         direct = [r["direct"]["total"] for r in report["results"]]
@@ -492,7 +605,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--task-queue")
     parser.add_argument("--runs", type=int, default=10)
     parser.add_argument("--engine", choices=["heuristic", "jev"], default="heuristic")
-    parser.add_argument("--scenario", choices=["happy", "mismatch", "crash"], default="happy")
+    parser.add_argument(
+        "--scenario",
+        choices=["happy", "mismatch", "crash", "gate-recovery"],
+        default="happy",
+    )
     parser.add_argument(
         "--delay", type=float, default=0.0, help="simulated provider execution seconds"
     )

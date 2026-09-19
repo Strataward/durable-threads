@@ -224,6 +224,7 @@ Try it without a provider or a TypeSafe key:
 docker compose -f ops/temporal/docker-compose.yml up -d
 python3 -m pytest tests/test_temporal_workflows.py
 python3 scripts/bench_durable.py --runs 5
+python3 scripts/bench_durable.py --scenario gate-recovery --runs 1
 ```
 
 Write-capable workers are deliberately serialized on a shared checkout. Parallel mutation requires real workspace isolation; Durable Threads will not race multiple writers against the same working tree merely because Jev suggests `parallel_workers`.
@@ -268,6 +269,7 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
 - [Durable mode overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
+- [ADR 0001: Rust / WebAssembly decision](docs/adr/0001-rust-wasm.md)
 - [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
 
 ## Compatibility history

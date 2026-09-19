@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-19T18:25:09+00:00",
+  "python": "3.12.13",
+  "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+  "results": [
+    {
+      "name": "classify_risk x5 objectives",
+      "iterations": 20000,
+      "us_per_call": 87.4572622500068
+    },
+    {
+      "name": "parse_worker_result + validate_evidence",
+      "iterations": 20000,
+      "us_per_call": 24.79336079999257
+    },
+    {
+      "name": "ExecutionRegistry.rank",
+      "iterations": 20000,
+      "us_per_call": 6.527161299993622
+    },
+    {
+      "name": "select_workers (roster routing)",
+      "iterations": 20000,
+      "us_per_call": 58.05995250000251
+    },
+    {
+      "name": "assess_task with HeuristicDecisionEngine",
+      "iterations": 2000,
+      "us_per_call": 89.67779549993793
+    }
+  ]
+}
