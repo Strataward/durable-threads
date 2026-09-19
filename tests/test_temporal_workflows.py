@@ -157,10 +157,11 @@ def test_nonzero_return_code_fails_after_available_provider_is_excluded(
     monkeypatch.setenv("DURABLE_THREADS_DECISION_ENGINE", "heuristic")
     monkeypatch.setenv("DURABLE_THREADS_ENABLE_SCRIPTED", "1")
 
-    from temporalio.client import WorkflowFailureError
+    result = asyncio.run(_execute(_task(tmp_path, max_attempts=2)))
 
-    with pytest.raises(WorkflowFailureError):
-        asyncio.run(_execute(_task(tmp_path, max_attempts=2)))
+    assert result.status == "failed"
+    assert len(result.attempts) == 1
+    assert result.selected_provider == "scripted"
 
 
 def test_human_gate_rejects_with_review_note(tmp_path, monkeypatch) -> None:

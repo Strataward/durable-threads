@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .execution import _EXECUTOR_ID
+
 
 class EvidenceError(ValueError):
     """Raised when worker evidence cannot support integration."""
@@ -167,8 +169,10 @@ def validate_evidence(
 ) -> WorkerEvidence:
     """Validate status, paths, checks, and optionally the exact working-tree diff."""
 
-    if evidence.provider not in {"codex", "claude", "grok", "cursor", "scripted"}:
+    if not evidence.provider:
         raise EvidenceError("worker result must declare a provider")
+    if not _EXECUTOR_ID.fullmatch(evidence.provider):
+        raise EvidenceError("worker result provider id is invalid")
     changed = _validate_paths(evidence.changed_paths, allowed_paths)
     if evidence.status == "complete" and not evidence.checks:
         raise EvidenceError("complete worker result must include exact checks")

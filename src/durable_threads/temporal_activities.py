@@ -14,6 +14,7 @@ from temporalio import activity
 from .decisions import decision_engine_from_env
 from .evidence import EvidenceError, git_changed_paths, parse_worker_result, validate_evidence
 from .execution import (
+    ExecutionError,
     ExecutionRequest,
     ExecutionRequirements,
     default_execution_registry,
@@ -68,7 +69,10 @@ def route_executors_activity(request: RouteExecutorsInput) -> list[dict[str, Any
     mutating_checkout = bool({"filesystem", "git"} & set(task.required_capabilities))
     if request.assessment.get("executionShape") == "parallel_workers" and not mutating_checkout:
         count = task.speculative_parallelism
-    selections = registry.select(requirements, count=count, available_only=True)
+    try:
+        selections = registry.select(requirements, count=count, available_only=True)
+    except ExecutionError:
+        return []
     return [selection.to_dict() for selection in selections]
 
 
