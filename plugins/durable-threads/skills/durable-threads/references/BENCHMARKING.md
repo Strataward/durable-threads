@@ -2,6 +2,10 @@
 
 Durable Threads should change defaults only when matched evaluations show a better outcome.
 
+## Durable mode orchestration overhead
+
+See the [durable-mode overhead report](../../../../../docs/benchmarks/2026-09-19-durable-mode-overhead.md) and run the [benchmark script](../../../../../scripts/bench_durable.py) for the recorded local Temporal and Jev measurements.
+
 ## Primary question
 
 For a given task class and risk class, which model/effort topology maximizes accepted correct work under the user's constraints?

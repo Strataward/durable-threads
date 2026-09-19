@@ -7,6 +7,21 @@ The project uses semantic versioning after the 1.0 release.
 
 ## [Unreleased]
 
+### Added
+
+- Add `HeuristicDecisionEngine` and `DURABLE_THREADS_DECISION_ENGINE` for deterministic offline decisions.
+- Add the `scripted` test executor behind `DURABLE_THREADS_ENABLE_SCRIPTED`.
+- Add Temporal workflow tests with a time-skipping environment.
+- Add `scripts/bench_durable.py` and the durable-mode overhead report.
+- Add the `ops/temporal` self-hosted development compose stack.
+
+### Fixed
+
+- Fix the worker entrypoint so sync Activities receive a thread-pool `activity_executor`.
+- Fix verification so it reads the existing `concerns` field instead of a non-existent `remaining_concerns` attribute.
+- Fix routing so no remaining executor returns a failed task after `switch_executor`.
+- Fix evidence validation so runtime-extensible provider IDs are accepted.
+
 ### Planned
 
 - Add an optional OpenAI Agents API backend for headless/CI/SaaS execution and normalized subagent telemetry.

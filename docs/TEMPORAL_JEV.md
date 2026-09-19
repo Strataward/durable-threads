@@ -106,6 +106,22 @@ export DURABLE_THREADS_JEV_MODEL='jev-latest'
 export DURABLE_THREADS_JEV_TIMEOUT_SECONDS='30'
 \`\`\`
 
+### Run without a TypeSafe key
+
+Set \`DURABLE_THREADS_DECISION_ENGINE=heuristic\` to run without a TypeSafe key. Set it to \`jev\` to require Jev. The default is \`jev\` when \`TYPESAFE_API_KEY\` is set and \`heuristic\` otherwise.
+
+The heuristic engine is deterministic and offline. Use it for tests and benchmarks. It does not judge evidence quality.
+
+### Self-hosted Temporal
+
+Use the self-hosted dev stack in [ops/temporal/docker-compose.yml](../ops/temporal/docker-compose.yml). The short setup guide is in [ops/temporal/README.md](../ops/temporal/README.md).
+
+\`\`\`bash
+docker compose -f ops/temporal/docker-compose.yml up -d
+\`\`\`
+
+Open the UI at <http://localhost:8233>.
+
 ## Run the worker
 
 Start Temporal locally or point at Temporal Cloud, then:
@@ -113,6 +129,8 @@ Start Temporal locally or point at Temporal Cloud, then:
 \`\`\`bash
 durable-threads-temporal-worker
 \`\`\`
+
+Use \`--max-sync-activities\` or \`DURABLE_THREADS_MAX_SYNC_ACTIVITIES\` to size the thread pool for routing and verification Activities. The default is 8.
 
 The worker registers:
 
@@ -122,6 +140,28 @@ The worker registers:
 - executor routing;
 - provider execution with heartbeats;
 - git/evidence verification.
+
+### Test executor
+
+Set \`DURABLE_THREADS_ENABLE_SCRIPTED=1\` to enable the \`scripted\` provider. It replays \`<cwd>/.durable-threads/scripted.json\`.
+
+\`\`\`json
+{
+  "writes": {"relative/path": "file content"},
+  "result": {
+    "status": "complete",
+    "changedPaths": ["relative/path"],
+    "checks": ["python -m pytest -q: passed"],
+    "remainingConcerns": []
+  },
+  "returnCode": 0,
+  "delaySeconds": 0.0,
+  "stderr": "",
+  "extraStdout": ""
+}
+\`\`\`
+
+Use this executor for tests and benchmarks only. Never use it for real work.
 
 ## Start a durable task
 
@@ -155,6 +195,12 @@ Or reject it:
 durable-threads-temporal review --workflow-id <id> --reject --note 'Tenant-isolation concern remains'
 \`\`\`
 
+## Measured overhead
+
+Local dev-server runs measured 0.15–0.5 seconds of orchestration overhead per task and about 130 ms per Jev decision, with two decisions per attempt. A crash escalated in about 45 seconds without creating a duplicate writer. Jev held a thin-evidence task at \`review_required\` because \`evidence_sufficient\` was 0.72, below the R1 threshold of 0.85.
+
+See the [durable-mode overhead report](benchmarks/2026-09-19-durable-mode-overhead.md) and [benchmark runner](../scripts/bench_durable.py).
+
 ## Parallelism and speculative execution
 
 Jev may select \`parallel_workers\` when uncertainty makes hedging worthwhile, and the Temporal workflow is capable of running multiple child workflows concurrently.
@@ -178,7 +224,7 @@ Parallel execution is available for non-mutating/remote executor contracts. Writ
 
 ## Current limitations
 
-- Built-in durable execution currently uses the headless CLI adapters. Managed OpenAI/Codex, Gemini, sandbox, or remote-runner integrations should be implemented as \`ExecutorPlugin\`s rather than special-cased in the workflow.
+- Built-in durable execution currently uses the headless CLI adapters. Managed OpenAI/Codex, Gemini, sandbox, or remote-runner integrations should be implemented as \`ExecutorPlugin\`s rather than special-cased in the workflow. No real coding-agent comparison has been benchmarked yet.
 - Independent automated R3/R4 review is represented as a required gate; the first durable implementation does not run a write-capable coding CLI as a pretend read-only reviewer.
 - Long histories should add a deliberate Continue-As-New boundary once workload telemetry establishes a sensible event threshold.
 - Provider cost/latency learning is not yet used in ranking. Workflow records already retain decision, provider, usage, evidence, and outcome data needed for that optimizer.

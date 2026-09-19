@@ -218,6 +218,14 @@ durable-threads-temporal start \
   --cwd /path/to/repository
 ```
 
+Try it without a provider or a TypeSafe key:
+
+```bash
+docker compose -f ops/temporal/docker-compose.yml up -d
+python3 -m pytest tests/test_temporal_workflows.py
+python3 scripts/bench_durable.py --runs 5
+```
+
 Write-capable workers are deliberately serialized on a shared checkout. Parallel mutation requires real workspace isolation; Durable Threads will not race multiple writers against the same working tree merely because Jev suggests `parallel_workers`.
 
 See [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md).
@@ -259,6 +267,7 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 - [Operating policy](plugins/durable-threads/skills/durable-threads/references/OPERATING_POLICY.md)
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
+- [Durable mode overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
 - [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
 
 ## Compatibility history
@@ -273,8 +282,11 @@ Durable Threads does not duplicate native Codex spawn/wait/resume machinery unle
 python3 -m pip install -e '.[dev]'
 pytest
 ruff check .
+python -m compileall -q src scripts
 python scripts/validate_repo.py
 ```
+
+Durable mode: the four checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`.
 
 Durable Threads is alpha software. Codex plugin, subagent, model, and worktree surfaces can change quickly, so compatibility documentation is dated and should be rechecked against current upstream sources.
 
