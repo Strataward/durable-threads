@@ -1,0 +1,32 @@
+---
+description: Durable Threads public plugin conventions
+alwaysApply: true
+---
+
+# Durable Threads
+
+Public Codex plugin. Canonical skill: `plugins/durable-threads/skills/durable-threads/`.
+
+Do not add a second skill install surface.
+
+## Own this work
+
+Plugin, marketplace, public docs, Python helper, and public self-host TypeScript.
+
+Hosted SaaS product work belongs in sibling `durable-platform`.
+
+## Checks
+
+```text
+python3 -m pytest
+ruff check .
+python3 -m compileall -q src scripts
+python3 scripts/validate_repo.py
+npm test
+```
+
+## Safety
+
+Use live model discovery. Do not invent a model identifier. Do not add real thread IDs, transcripts, or secrets to committed files. Do not merge, push, or deploy without explicit user intent.
+
+Lead docs with the zero-config Codex path.

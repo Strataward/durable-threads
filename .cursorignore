@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+**/credentials.json
+**/secrets.json
+
+# Bulk / generated
+node_modules/
+dist/
+coverage/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.vite/
+.codegraph/
+.playwright-mcp/
+*.tsbuildinfo
+
+# Lockfiles
+package-lock.json
+uv.lock
+
+# Local agent state
+.codex-thread-loom/
+.codex/loom/
+.codex-thread-ledger/
+examples/local-roster.json
