@@ -336,10 +336,8 @@ class ExecutionRegistry:
             plugin = value() if callable(value) and not isinstance(value, ExecutorPlugin) else value
             if not isinstance(plugin, ExecutorPlugin):
                 raise TypeError(
-                    (
-                        f"entry point {entry.name!r} must return "
-                        "durable_threads.execution.ExecutorPlugin"
-                    )
+                    f"entry point {entry.name!r} must return "
+                    "durable_threads.execution.ExecutorPlugin"
                 )
             self.register(plugin)
             loaded.append(plugin.descriptor.executor_id)
@@ -355,6 +353,13 @@ def _builtin_availability(provider: str) -> Callable[[], bool]:
         return bool(status["available"])
 
     return probe
+
+
+def _builtin_backend_factory(provider: str) -> Callable[[], ExecutionBackend]:
+    def factory() -> ExecutionBackend:
+        return CliExecutionBackend(provider)
+
+    return factory
 
 
 def default_execution_registry(*, load_entry_points: bool = True) -> ExecutionRegistry:
@@ -379,9 +384,9 @@ def default_execution_registry(*, load_entry_points: bool = True) -> ExecutionRe
             supports_effort=capability.supports_effort,
             metadata={"protocol": capability.protocol},
         )
-        backend_factory: Callable[[], ExecutionBackend] | None = None
-        if capability.headless:
-            backend_factory = lambda provider=provider: CliExecutionBackend(provider)
+        backend_factory = (
+            _builtin_backend_factory(provider) if capability.headless else None
+        )
         registry.register(
             ExecutorPlugin(
                 descriptor=descriptor,
