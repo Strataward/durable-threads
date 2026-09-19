@@ -73,7 +73,10 @@ def route_executors_activity(request: RouteExecutorsInput) -> list[dict[str, Any
         excluded_providers=tuple(request.excluded_providers),
     )
     count = 1
-    if request.assessment.get("executionShape") == "parallel_workers":
+    # Parallel readers/remote workers are safe; parallel writers sharing one checkout are not.
+    # Until a runtime advertises isolated workspaces/worktrees, serialize mutating coding work.
+    mutating_checkout = bool({"filesystem", "git"} & set(task.required_capabilities))
+    if request.assessment.get("executionShape") == "parallel_workers" and not mutating_checkout:
         count = task.speculative_parallelism
     selections = registry.select(requirements, count=count, available_only=True)
     return [selection.to_dict() for selection in selections]
