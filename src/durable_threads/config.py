@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from .providers import PROVIDERS
 from .risk import validate_risk
 
 
@@ -18,6 +18,7 @@ class ConfigError(ValueError):
 _EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
 _EXECUTION_CLASSES = {"decision", "workhorse", "review", "specialist"}
 _PROFILES = {"economy", "balanced", "frontier"}
+_PROVIDER_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
 
 def _text(value: Any, field: str, *, required: bool = True) -> str | None:
@@ -35,11 +36,12 @@ def _integer(value: Any, field: str, *, minimum: int = 0) -> int:
 
 
 def _provider(value: Any, field: str) -> str:
-    provider = cast(str, _text(value, field))
-    if provider.casefold() not in PROVIDERS:
-        allowed = ", ".join(PROVIDERS)
-        raise ConfigError(f"{field} must be one of: {allowed}")
-    return provider.casefold()
+    provider = cast(str, _text(value, field)).casefold()
+    if not _PROVIDER_ID.fullmatch(provider):
+        raise ConfigError(
+            f"{field} must be a lowercase provider id using letters, digits, '.', '_' or '-'"
+        )
+    return provider
 
 
 def _execution_class(value: Any, field: str, default: str) -> str:
