@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 JSONValue = str | int | float | bool | None | list["JSONValue"] | dict[str, "JSONValue"]
 JSONState = str | dict[str, Any] | list[Any]
@@ -48,7 +49,7 @@ class DecisionQuestion:
         *,
         true: JSONState | None = None,
         false: JSONState | None = None,
-    ) -> "DecisionQuestion":
+    ) -> DecisionQuestion:
         criteria: dict[str, JSONState | None] | None = None
         if true is not None or false is not None:
             criteria = {"true": true, "false": false}
@@ -59,7 +60,7 @@ class DecisionQuestion:
         cls,
         instructions: JSONState,
         criteria: Mapping[str, JSONState | None],
-    ) -> "DecisionQuestion":
+    ) -> DecisionQuestion:
         if not criteria:
             raise ValueError("choice criteria must not be empty")
         return cls(QuestionKind.CHOICE, instructions, dict(criteria))
@@ -69,7 +70,7 @@ class DecisionQuestion:
         cls,
         instructions: JSONState,
         criteria: tuple[JSONState, ...] | list[JSONState],
-    ) -> "DecisionQuestion":
+    ) -> DecisionQuestion:
         if not criteria:
             raise ValueError("score criteria must not be empty")
         return cls(QuestionKind.SCORE, instructions, tuple(criteria))
@@ -254,7 +255,10 @@ class JevDecisionEngine:
                     provider_confidence=float(answer.confidence),
                 )
             elif answer_type == "score":
-                probabilities = {str(key): float(value) for key, value in answer.probabilities.items()}
+                probabilities = {
+                    str(key): float(value)
+                    for key, value in answer.probabilities.items()
+                }
                 answers[name] = DecisionAnswer(
                     name=name,
                     kind=QuestionKind.SCORE,
