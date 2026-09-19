@@ -14,6 +14,13 @@ from .decisions import (
     QuestionKind,
     StaticDecisionEngine,
 )
+from .evidence import (
+    EvidenceError,
+    WorkerEvidence,
+    git_changed_paths,
+    parse_worker_result,
+    validate_evidence,
+)
 from .execution import (
     ExecutionBackend,
     ExecutionError,
@@ -25,13 +32,6 @@ from .execution import (
     default_execution_registry,
 )
 from .intelligence import ResultAssessment, TaskAssessment, assess_result, assess_task
-from .evidence import (
-    EvidenceError,
-    WorkerEvidence,
-    git_changed_paths,
-    parse_worker_result,
-    validate_evidence,
-)
 from .ledger import Ledger, LedgerBusyError, LedgerStateError
 from .packets import DelegationPacket, PacketError, build_packet
 from .providers import (
