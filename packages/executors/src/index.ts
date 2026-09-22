@@ -23,3 +23,5 @@ export {
   type ExecutorDescriptor,
   type ExecutorPlugin,
 } from "./types.js";
+export { CodexLiveStepControl } from "./live-step-control.js";
+export type { ActiveStepTarget, SettingsRpc, StepControlCapabilities, StepUpdateReceipt } from "./live-step-control.js";

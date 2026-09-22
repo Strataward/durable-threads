@@ -1,108 +1,45 @@
 ---
 name: durable-threads
-description: Coordinate coding work with native Codex subagents, frontier decisions, efficient high-reasoning execution, deterministic verification, safe parallelism, and evidence-gated escalation. Use when a coding task benefits from delegation, context isolation, persistent workers, or risk-aware review.
+description: Risk-aware, economical coding with native agents, bounded contracts, and evidence-based completion. Use for delegation, durable work, or Pro usage optimization.
 ---
 
 # Durable Threads
 
-Durable Threads should work immediately after installation. Do not require a roster, Python helper, extra provider, or project-specific configuration for the default workflow.
+Use the host's native runtime. Own policy, not a second agent scheduler. Preserve the user's chosen model and workflow unless a change is authorized. Do not require rosters, Python, Temporal, or Jev for ordinary use.
 
-The operating principle is:
+## First decision
 
-> Frontier decisions. Workhorse execution. Native agents. Deterministic verification.
+Keep small, dependent, or already-contextualized work in the current thread. Delegate only when a bounded worker, independent reviewer, or parallel reader earns its context and coordination cost. Do not spawn a swarm or monitoring agent by default.
 
-Use the current task as planner and integrator. Delegate only when the handoff adds value. On current Codex, prefer the runtime's **native subagent system** rather than launching another Codex process or emulating orchestration yourself.
+For ChatGPT Pro 5x, Astra efficiency, or quota optimization, read `references/PRO5_POLICY.md`. Otherwise use the policy below. Load only references needed for the present decision.
 
-## Native-runtime rule
+## Execute a bounded task
 
-When native Codex subagents are available:
+1. Inspect the actual repository and requested target. Classify consequence: R0 mechanical; R1 bounded; R2 integration; R3 authentication, payments, privacy, destructive data or concurrency; R4 systemic architecture or recovery.
+2. Freeze the objective, important decisions, invariants, non-goals, allowed paths, and observable acceptance criteria. Do not send a whole transcript to a worker. Keep architecture and security decisions with the planner.
+3. Select the smallest sufficient execution shape. Prefer native `explorer` for read-heavy discovery and `worker` for implementation. Resolve model and supported effort from the live runtime, not guessed IDs. For bounded delegated work, start with an efficient model and supported high effort; use frontier reasoning for consequential decisions and independent review.
+4. Use one writer per shared checkout. Independent readers may run concurrently. Multiple writers require isolated worktrees or sandboxes and non-overlapping ownership; serialize dependent or overlapping changes. Worktrees are not a security sandbox.
+5. Run focused checks and inspect the diff. Batch independent reads/checks when safe; stop on a failed prerequisite. Keep full logs out of model context and return bounded failure excerpts. Never report a check as passed unless it actually ran.
+6. Accept only what evidence supports. A worker's completion statement is not acceptance. The planner reruns integration/security-relevant checks and obtains required independent review.
 
-- use `explorer` for specific, read-heavy codebase questions;
-- use `worker` for bounded implementation, debugging, tests, and production work;
-- use a project-defined read-only reviewer/specialist role when one is available and justified;
-- otherwise use the default agent for independent review;
-- use the runtime's native wait/resume lifecycle instead of repeatedly resampling the parent just to check status.
+## Efficient continuation
 
-If native subagents are unavailable, fall back to the existing provider/session mechanisms. Do not require external providers merely because they exist.
+Reuse a healthy, relevant session for bounded corrections. Do not respawn a worker to reread the same files. Start a fresh scoped context when history is predominantly irrelevant, not after every tool call. Retain the objective, decisions, file references, unresolved risks and next check; exclude secrets and unneeded transcripts.
 
-## Default workflow
+Use event-driven or blocking tool waits. Do not call a model repeatedly to ask whether a build finished. When a runtime cannot notify, report the waiting state rather than inventing wake support. Automatic retries need a classified transient failure; repeated identical failure or no acceptance progress requires diagnosis, not another blind attempt.
 
-1. **Decide whether a handoff helps.** Keep small, dependent, or already well-contextualized work in the current task. Delegate when narrower context, independent ownership, lower-cost execution, or parallel read-heavy work improves the task.
-2. **Classify consequence.** Use R0 mechanical, R1 bounded, R2 integration, R3 critical, or R4 systemic. Difficulty alone does not raise risk.
-3. **Freeze the contract.** Give the child the objective, decisions already made, invariants, non-goals, allowed paths, acceptance checks, and constraints. Do not make a workhorse rediscover architecture unnecessarily.
-4. **Choose the native role.** Prefer `explorer` for codebase discovery and `worker` for execution. Use custom reviewer/security roles only when they materially improve independence or risk coverage.
-5. **Choose the model/effort economically.** Prefer the runtime's efficient high-reasoning option for bounded implementation/debugging. Use balanced reasoning for harder general planning. Use frontier reasoning for architecture, ambiguous failures, security-sensitive decisions, and R3/R4 review. Discover live model names; do not invent IDs.
-6. **Choose isolation before fan-out.** Read-only agents can usually share a checkout. One writer can use the shared checkout. Multiple independent writers should use isolated worktrees when supported. Overlapping writers should be serialized.
-7. **Dispatch and sleep.** Send bounded work and avoid repeated no-op polling or transcript rereads while a healthy child executes. Wake the planner on completion, failure, user steering, or material new evidence.
-8. **Verify deterministically first.** Inspect the actual diff and prefer tests, type checks, linters, static analysis, schema checks, migration checks, and CI before asking another model for an opinion.
-9. **Escalate from evidence.** A failed check, violated invariant, repeated conceptual error, unresolved ambiguity, or elevated risk can justify a stronger model. Do not escalate based on prestige alone.
+## Evidence and review
 
-## Safe parallelism
+Return changed paths, exact commands/results, remaining concerns, and what was not tested. Use `references/RESULT.schema.json` when structured output is available.
 
-Use this invariant:
+R0/R1 normally need deterministic checks. R2 needs boundary/integration checks. R3/R4 requires independent specialist/frontier review. A reviewer receives the contract and actual diff/evidence in a separate, preferably read-only context. Preserve an explicit review requirement even when the implementation worker reports success. Human approval never substitutes for missing verification.
 
-> **Subagents for parallel cognition. Worktrees for parallel mutation.**
+## Boundaries
 
-Parallelize independent explorers, reviewers, and other read-heavy work freely within the runtime's configured concurrency limit. For writers, assign explicit ownership. Do not run overlapping writers in parallel. When several independent writers are useful and worktree isolation exists, prefer one checkout per writer.
+Stop or checkpoint on exhausted quota/budget, authentication failure, unknown writer state, session drift, path-scope violation, exhausted corrections, or invalidated architecture assumptions. Do not rotate identities, create accounts, silently use paid API fallback, or weaken approval/sandbox/review policy to keep running.
 
-Do not treat a worktree as proof that two changes are semantically independent; integration still belongs to the planner.
+Push, merge, deploy, publish and production changes require explicit authorization. Do not write project memory into a repository or publish transcripts without permission.
 
-## Default economics
+## References on demand
 
-When the runtime exposes equivalent tiers, a good starting policy is:
-
-- implementation and focused debugging: `efficient` + high reasoning (`xhigh` when supported);
-- read-heavy exploration: `efficient` or `balanced` at low/medium effort unless the question is unusually hard;
-- difficult general planning: `balanced` + `medium`;
-- consequential planning/review: `frontier` + `low` or `medium`;
-- higher frontier effort only when the task or measured results justify it.
-
-These are role policies, not hard-coded model names. Read `references/MODEL_ECONOMICS.md` when selecting or tuning models.
-
-## Result contract
-
-A completed worker should report changed paths, exact checks and results, and remaining concerns. When supported, use `references/RESULT.schema.json`.
-
-```json
-{
-  "status": "complete",
-  "provider": "codex",
-  "changedPaths": [],
-  "checks": ["exact command: passed"],
-  "remainingConcerns": ["None known"]
-}
-```
-
-A child result is evidence, not acceptance. The planner still inspects the diff and reruns integration- or security-relevant checks.
-
-## Review gate
-
-- R0/R1: deterministic checks are normally enough unless the result is suspicious.
-- R2: add integration review when contracts, queues, schemas, or external boundaries changed.
-- R3/R4: require independent specialist/frontier review by default.
-
-A reviewer should preferably be read-only and should receive the contract plus the actual diff/evidence, not the implementation worker's self-assessment as a substitute for inspection.
-
-## Safety and stopping
-
-Stop on quota exhaustion, authentication failure, unknown writer state, session drift, path-scope violation, exhausted corrections, or architecture ambiguity that invalidates the packet. Do not rotate task IDs or agent identities to bypass a stop.
-
-Push, merge, deploy, publish, account creation, and production changes require explicit user authorization.
-
-## Customize only when useful
-
-Do not ask a new user to configure workers or JSON before starting. Native Codex roles plus the defaults above are sufficient for ordinary work.
-
-Read advanced references only as needed:
-
-- `references/ARCHITECTURE.md` — policy/runtime/verification architecture;
-- `references/WHEN_TO_USE.md` — whether delegation earns its cost;
-- `references/RISK_ROUTING.md` — R0-R4 review policy;
-- `references/PACKET_CONTRACT.md` — detailed implementation contracts;
-- `references/MODEL_ECONOMICS.md` and `references/ASTRA.md` — model selection;
-- `references/PERSISTENT_THREADS.md` — durable session lifecycle;
-- `references/PROVIDERS.md` — native Codex vs optional Claude/Grok/Cursor adapters;
-- `references/OPERATING_POLICY.md` — retry, parallelism, isolation, and approval boundaries;
-- `references/BENCHMARKING.md`, `references/VALIDATION.md`, and `references/COMPARISON.md` — measurement and evaluation.
-
-The optional Python helper and roster files are for deterministic routing, provider-neutral experiments, benchmarking, or teams that want explicit policy. They are not prerequisites for using Durable Threads.
+Read `references/PACKET_CONTRACT.md` for task contracts, `references/RISK_ROUTING.md` for consequence gates, `references/MODEL_ECONOMICS.md` for model tradeoffs, `references/PERSISTENT_THREADS.md` for session lifecycle, `references/OPERATING_POLICY.md` for recovery/isolation, and `references/PROVIDERS.md` for optional adapters. Use `references/BENCHMARKING.md` for measured comparisons. None is an instruction to load every file.

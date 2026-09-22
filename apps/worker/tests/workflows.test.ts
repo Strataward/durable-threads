@@ -73,13 +73,13 @@ describe("Temporal TypeScript workflows", () => {
     await env?.teardown();
   });
 
-  async function execute(input: TaskRunInput) {
+  async function execute(input: TaskRunInput, overrides: Partial<typeof activities> = {}) {
     const taskQueue = `durable-test-${randomUUID()}`;
     const worker = await Worker.create({
       connection: env.nativeConnection,
       taskQueue,
       workflowsPath: fileURLToPath(new URL("../src/workflows.ts", import.meta.url)),
-      activities,
+      activities: { ...activities, ...overrides },
     });
     return worker.runUntil(
       env.client.workflow.execute(durableTaskWorkflow, {
@@ -155,5 +155,50 @@ describe("Temporal TypeScript workflows", () => {
     });
     expect(result.status).toBe("rejected");
     expect(result.reviewNote).toBe("Not approved offline.");
+  });
+
+  it("preserves task-level review even when the child reports accepted", async () => {
+    const root = mkdtempSync(join(tmpdir(), "dt-wf-"));
+    gitRepo(root);
+    scenario(root, { writes: { "src/result.py": "result = True\n" }, changedPaths: ["src/result.py"] });
+    const result = await execute(task(root), {
+      assessTaskActivity: async (input) => ({
+        ...await activities.assessTaskActivity(input), reviewRequired: true,
+      }),
+    });
+    expect(result.attempts[0]?.accepted).toBe(true);
+    expect(result.status).toBe("review_required");
+  });
+
+  it("does not manufacture verification from human approval", async () => {
+    const root = mkdtempSync(join(tmpdir(), "dt-wf-"));
+    gitRepo(root);
+    scenario(root, { writes: { "src/result.py": "result = True\n" }, changedPaths: ["src/result.py"] });
+    const taskQueue = `durable-test-${randomUUID()}`;
+    const worker = await Worker.create({
+      connection: env.nativeConnection, taskQueue,
+      workflowsPath: fileURLToPath(new URL("../src/workflows.ts", import.meta.url)),
+      activities: { ...activities, assessResultActivity: async () => ({
+        integrationReady: false, accepted: false, reviewRequired: true,
+        intervention: "human_review", semanticCompleteProbability: 0,
+        evidenceSufficientProbability: 0, interventionCertainty: 1,
+      }) },
+    });
+    const result = await worker.runUntil(async () => {
+      const handle = await env.client.workflow.start(durableTaskWorkflow, {
+        args: [task(root, { waitForHumanReview: true })],
+        workflowId: `workflow-${randomUUID()}`, taskQueue,
+      });
+      let status = await handle.query(statusQuery);
+      for (let attempt = 0; attempt < 100 && !status.reviewPending; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        status = await handle.query(statusQuery);
+      }
+      expect(status.reviewPending).toBe(true);
+      await handle.signal(reviewSignal, { approved: true, note: "Review is not test evidence" });
+      return handle.result();
+    });
+    expect(result.status).toBe("review_required");
+    expect(result.reviewNote).toBe("Review is not test evidence");
   });
 });

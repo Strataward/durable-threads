@@ -278,3 +278,18 @@ async def assess_result(
         review_required=review_required,
         batch=batch,
     )
+
+
+def completion_gate(
+    *,
+    integration_ready: bool,
+    task_review_required: bool,
+    result_review_required: bool,
+    review_approved: bool = False,
+) -> str:
+    """An approval cannot replace verification or waive a task-level review."""
+    if integration_ready is not True:
+        return "unverified"
+    if (task_review_required or result_review_required) and review_approved is not True:
+        return "review_required"
+    return "complete"
