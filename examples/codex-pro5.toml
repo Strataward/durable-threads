@@ -1,0 +1,16 @@
+# Merge these named profiles into config.toml; do not replace existing configuration.
+# Verify model availability in your own Codex session before use.
+[profiles.dt-pro5]
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
+service_tier = "default"
+
+[profiles.dt-pro5-deep]
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+service_tier = "default"
+
+[profiles.dt-pro5-routine]
+model = "gpt-5.6-luna"
+model_reasoning_effort = "xhigh"
+service_tier = "default"

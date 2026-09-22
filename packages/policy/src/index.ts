@@ -30,9 +30,15 @@ export { PacketError, buildPacket } from "./packets.js";
 export { classifyRisk, meetsThreshold, validateRisk, type RiskAssessment } from "./risk.js";
 export {
   catalogFromPayload,
+  catalogPageFromPayload,
+  readModelCatalog,
+  resolveReasoningEffort,
   resolveModel,
   selectWorkers,
   type ModelInfo,
   type Resolution,
   type RouteDecision,
 } from "./routing.js";
+
+export { UsageLedger, quotaGate, recommendCompute, completionGate, PRO5_BUDGET, PRO5_POLICY_VERSION, CREDIT_RATE_DATE, CREDIT_RATE_SOURCE } from "./efficiency.js";
+export type { UsageReceipt, QuotaWindow, QuotaSnapshot, ComputeState, ComputeBudget } from "./efficiency.js";

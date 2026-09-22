@@ -1,91 +1,46 @@
 # Model economics
 
-The goal is not to minimize tokens. It is to maximize **accepted, correct engineering work while preserving the scarce model capacity that matters most**.
+Optimize accepted engineering work per measured allowance, including planning, startup, context, corrections, tools and review. Do not optimize token count at the expense of correctness.
 
-> Put scarce intelligence on consequential decisions. Put sustained execution on the least expensive model/effort combination that reliably passes acceptance.
+## Select an explicit profile
 
-This is a project policy and an empirical hypothesis, not an OpenAI guarantee. Defaults should move when matched evaluations show a better route.
+**Astra-first / Pro 5x:** retain Astra when requested, including bounded implementation in a relevant existing thread. Reduce unnecessary inference, context, fan-out and repeated verification before switching models. See `PRO5.md`.
 
-## Economic roles
+**Hybrid economy:** use an explicitly permitted efficient provider/model for a bounded contract when the expected saved execution cost exceeds startup, handoff, correction and review costs. A cheap worker is not automatically cheaper overall. Paid API or Jev usage is a separate budget and must be disclosed.
 
-| Execution class | Purpose | Typical work |
-| --- | --- | --- |
-| `decision` | high-leverage choices | architecture, decomposition, ambiguity resolution, escalation |
-| `workhorse` | sustained execution | implementation, debugging, tests, routine refactors |
-| `review` | independent acceptance | diff review, integration review, acceptance validation |
-| `specialist` | domain-specific high-risk analysis | security, privacy, destructive migrations, recovery |
+Neither profile assumes a fixed exchange rate between tokens and included subscription allowance. Live catalogs supply model names and effort support. Account observations supply usage; a generic `pro` label does not prove 5x or 20x.
 
-A model can serve more than one role. The point of the classes is to make the intended economics explicit rather than letting the strongest available model become the default for every step.
+## Reasoning allocation
 
-## Current Plus-oriented starting point
+Retain a working baseline when adopting the skill. Trial low effort for narrow, resolved work; medium for integration and ambiguity; high for evidence of a conceptual difficulty or critical unresolved finding. Higher effort may be the economical choice when it prevents repeated failed attempts. Do not make efficient high/XHigh, or frontier low, universal rules.
 
-As of September 2026, a useful starting policy for users optimizing included ChatGPT Plus allowance in Codex/Work is:
+Downshift only after the hard question is resolved and multiple checkpoints support it. Keep a cooldown to avoid oscillation. Do not reduce required R3/R4 review when allowance is scarce. Pause, defer or narrow instead. Automatic model changes must not override an explicit user model preference.
 
-| Work | Starting policy |
-| --- | --- |
-| routine or bounded implementation | efficient + high/XHigh |
-| focused debugging | efficient + high/XHigh |
-| tests and mechanical validation | efficient + high when model reasoning is needed; deterministic tools first |
-| difficult general planning | balanced + medium |
-| first-line model review | efficient + high/XHigh |
-| consequential architecture or R3/R4 review | frontier + low/medium |
-| frontier high/XHigh/max | evidence-gated exception |
+## Eliminate avoidable work
 
-With OpenAI's current family, this can map to Luna XHigh for sustained execution and Astra Low/Medium for consequential decisions. Do not hard-code those names when a live catalog is available.
+Prefer one retained, relevant worker over repeated startups. Add a helper for a specific independent question, not a generic second opinion. Reuse a bounded contract rather than a full transcript. Parallel writers require actual isolation and disjoint ownership; parallel models are not a quota discount.
 
-## Why efficient XHigh execution can work
+Wait through native lifecycle/events instead of repeatedly asking a model for status. Batch independent reads/checks, not dependent mutations. Limit logs in the prompt. Run each acceptance check once per relevant code state; repeat only after changes or new evidence. Stop after target acceptance rather than generating a new quality loop.
 
-A workhorse should not be asked to rediscover the whole product problem. Before dispatch, the planner should have resolved important architecture choices and supplied bounded paths, acceptance checks, invariants, and non-goals.
+Keep Fast mode off when longevity matters. Large context is capacity, not a target. Retain useful context; checkpoint and start a fresh bounded task when old context is mostly irrelevant. Do not force compaction repeatedly without evidence that it helps.
 
-That changes the search space. High reasoning effort on an efficient model is being spent on **how to execute a chosen design**, not on repeatedly deciding what the design should be.
+## Separate layers and budgets
 
-The relevant outcome is final accepted correctness after verification, including corrections—not first-pass prestige.
+Native mode has no mandatory Jev or Temporal round-trips. Jev may help with ambiguous control decisions, but its scores need calibration against outcomes and it is not included in ChatGPT Pro. Deterministic counters and acceptance gates should not require another model.
 
-## Evidence-gated escalation
+Temporal can coordinate long-lived external work; it cannot prevent a nested Codex agent from polling internally without an actual runtime integration. Heartbeats are liveness/recovery checkpoints, not an append-only decision ledger. Durable decision receipts need dedicated persistence and idempotency.
 
-Keep the default ladder short:
+## Measurement
 
-```mermaid
-flowchart LR
-    E["Efficient<br/>XHigh"] -->|"repeated acceptance failure"| B["Balanced<br/>Medium"]
-    B -->|"architecture ambiguity"| F1["Frontier<br/>Low"]
-    F1 -->|"hard unresolved decision"| F2["Frontier<br/>Medium"]
-    F2 -->|"exception only"| FX["Frontier<br/>High+"]
-```
+Compare fixed settings, bounded Astra-first settings and permitted hybrid settings on matched task revisions with identical acceptance gates. Include correction/review costs. Record completed model responses rather than treating user-visible turns as generations. Keep cached input separate and do not double-count reasoning within output or cumulative usage mirrors.
 
-Concrete escalation evidence includes repeated acceptance failures, missing architecture decisions, conflicting parallel tasks, cross-module invariant failures, credible security findings, or an inability to make a critical change reversible.
+Report coverage: unseen warmups, compactions, child sessions and unrelated account activity prevent exact attribution. Do not present simulated savings as measured quota extension. A successful mock protocol test verifies our client logic, not the user's installation or billing.
 
-Do not escalate simply because the task looks important.
+Audited 2026-09-22. Current sources:
 
-## Sleeping orchestrator
+- https://learn.chatgpt.com/docs/pricing
+- https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan
+- https://developers.openai.com/api/docs/guides/latest-model
+- https://learn.chatgpt.com/docs/app-server
 
-When `strategy.sleepingOrchestrator` is true, the planner should decide, dispatch, and then wait without repeated no-op parent resampling. Wake on completion, failure, material evidence, or another real decision boundary.
-
-Relevant Codex reports:
-
-- https://github.com/openai/codex/issues/35108
-- https://github.com/openai/codex/issues/41875
-
-## Fast mode
-
-When allowance longevity matters, keep Fast mode off by default. Fast mode is a latency choice and consumes included allowance faster; it is not an intelligence upgrade.
-
-## Context economics
-
-A large context window is capacity, not a target. Prefer compact contracts, retained sessions while their context is still relevant, exact path scopes, summaries of failed approaches, and a fresh bounded worker when old context becomes misleading.
-
-## Measuring value
-
-Record what the provider actually exposes: input tokens, cached input, output tokens, reasoning tokens, wall time, model turns, parent turns, selected workers, follow-ups, deterministic failures, review defects, corrections, first-pass acceptance, final acceptance, model selector/effort, task class, and risk class.
-
-Do not infer subscription savings from packet size alone. Compare matched tasks against a direct retained-session baseline and keep correctness gates identical.
-
-## Current OpenAI references
-
-- https://help.openai.com/en/articles/20001516
-- https://developers.openai.com/api/docs/models/gpt-5.6-luna
-- https://developers.openai.com/api/docs/models
-- https://github.com/openai/codex/issues/35108
-- https://github.com/openai/codex/issues/41875
-
-Product limits and model availability change. Treat current numbers as dated inputs, never permanent constants.
+Product facts can change. The profile and governor thresholds are Durable Threads policy, not OpenAI guarantees.

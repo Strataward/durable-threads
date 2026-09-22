@@ -1,6 +1,6 @@
 # Installation
 
-Last verified: **2026-09-19**.
+Last checked: **2026-09-22**. The installed CLI help confirms the commands below. Repository validation checks the plugin package. This check did not change the user's installed plugins.
 
 Durable Threads has one normal distribution path: install the **Durable Threads plugin**. The plugin bundles the canonical `durable-threads` skill, so plugin users do not install a second copy of the skill.
 
@@ -18,10 +18,11 @@ codex plugin add durable-threads@strataward
 The bundled skill loads automatically. Your first prompt can be natural:
 
 ```text
-Use Durable Threads to implement refresh-token rotation for my service.
+Use Durable Threads to fix the failing test.
+Keep the change small. Run the relevant checks.
 ```
 
-Durable Threads will decide whether delegation helps, classify risk R0–R4, freeze a bounded implementation contract, choose the native Codex role (`explorer` for read-heavy, `worker` for execution), pick an economical model, execute and verify deterministically, and report results — escalating from evidence, not prestige.
+Durable Threads checks the scope and keeps your selected model. It uses a helper only when the handoff is useful. It checks the result before it reports completion.
 
 ### 3. Verify the result
 

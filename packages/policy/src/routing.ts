@@ -1,18 +1,8 @@
 import type { Roster, WorkerConfig } from "@durable-threads/contracts";
 import { classifyRisk, meetsThreshold, type RiskAssessment } from "./risk.js";
 
-export interface ModelInfo {
-  modelId: string;
-  displayName: string;
-  tier: string;
-  isDefault: boolean;
-}
-
-export interface Resolution {
-  model: ModelInfo | null;
-  reason: string;
-  matched: boolean;
-}
+export { catalogFromPayload, catalogPageFromPayload, readModelCatalog, resolveModel, resolveReasoningEffort } from "./model-catalog.js";
+export type { ModelInfo, Resolution } from "./model-catalog.js";
 
 export interface RouteDecision {
   selected: WorkerConfig[];
@@ -169,72 +159,4 @@ export function selectWorkers(
     risk,
     frontierReviewRecommended: frontierReview,
   };
-}
-
-export function catalogFromPayload(payload: unknown): ModelInfo[] {
-  const rawModels = Array.isArray(payload)
-    ? payload
-    : payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>).models
-      : undefined;
-  if (!Array.isArray(rawModels)) {
-    throw new Error("model catalog must contain a models array");
-  }
-  return rawModels
-    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
-    .map((item) => {
-      const modelId = item.id ?? item.model;
-      if (typeof modelId !== "string" || !modelId.trim()) {
-        throw new Error("model catalog entries need an id");
-      }
-      const displayName = item.displayName ?? item.display_name ?? modelId;
-      const tier = item.tier ?? item.costTier ?? "unknown";
-      return {
-        modelId: modelId.trim(),
-        displayName: String(displayName).trim(),
-        tier: String(tier).trim().toLowerCase(),
-        isDefault: Boolean(item.isDefault ?? item.default ?? false),
-      };
-    });
-}
-
-function normal(value: string): string {
-  return value.toLowerCase().replaceAll("_", " ").replaceAll("-", " ").split(/\s+/).join(" ");
-}
-
-export function resolveModel(catalog: Iterable<ModelInfo>, selector: string): Resolution {
-  const models = [...catalog];
-  const wanted = normal(selector);
-  for (const model of models) {
-    const names = new Set([
-      normal(model.modelId),
-      normal(model.displayName),
-      ...normal(model.modelId).split(" "),
-      ...normal(model.displayName).split(" "),
-    ]);
-    if (names.has(wanted)) {
-      return { model, reason: `exact catalog match for '${selector}'`, matched: true };
-    }
-  }
-  const tierGroups: Record<string, Set<string>> = {
-    frontier: new Set(["frontier", "flagship", "high"]),
-    balanced: new Set(["balanced", "standard", "medium"]),
-    efficient: new Set(["efficient", "low", "mini"]),
-  };
-  if (wanted in tierGroups) {
-    const candidates = models.filter((model) => tierGroups[wanted]!.has(model.tier));
-    if (candidates.length) {
-      const fallback = candidates.find((model) => model.isDefault) ?? candidates[0]!;
-      return { model: fallback, reason: `${wanted} role matched live catalog metadata`, matched: true };
-    }
-    const defaultModel = models.find((model) => model.isDefault) ?? null;
-    if (defaultModel) {
-      return {
-        model: defaultModel,
-        reason: `${wanted} role was unavailable; using the runtime default without guessing`,
-        matched: false,
-      };
-    }
-  }
-  return { model: null, reason: `no live model matched selector '${selector}'`, matched: false };
 }

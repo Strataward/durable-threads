@@ -14,6 +14,7 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
+    from .intelligence import completion_gate
     from .temporal_activities import (
         assess_result_activity,
         assess_task_activity,
@@ -315,7 +316,17 @@ class DurableTaskWorkflow:
             best = max(current, key=_attempt_rank)
             semantic = best.result_assessment
 
-            if best.accepted:
+            integration_ready = (
+                semantic.get("integrationReady") is True
+                and best.verification.get("complete") is True
+                and best.return_code == 0
+            )
+            gate = completion_gate(
+                integration_ready=integration_ready,
+                task_review_required=bool(task_assessment.get("reviewRequired")),
+                result_review_required=best.review_required,
+            )
+            if gate == "complete":
                 return self._result(
                     status="complete",
                     risk=risk,
@@ -324,7 +335,6 @@ class DurableTaskWorkflow:
                     provider=best.provider,
                 )
 
-            integration_ready = bool(semantic.get("integrationReady"))
             review_required = (
                 bool(task_assessment.get("reviewRequired"))
                 or best.review_required
@@ -363,7 +373,7 @@ class DurableTaskWorkflow:
                     decision = await self._wait_for_review()
                     if decision.approved:
                         return self._result(
-                            status="complete",
+                            status="complete" if integration_ready else "review_required",
                             risk=risk,
                             assessment=task_assessment,
                             attempts=attempts,

@@ -19,6 +19,7 @@ import type {
   WorkflowStatus,
 } from "./contracts.js";
 import { taskFromInput } from "./contracts.js";
+import { completionGate } from "../../../packages/policy/src/efficiency.js";
 
 const decisionActivities = proxyActivities<typeof activities>({
   startToCloseTimeout: "45 seconds",
@@ -258,7 +259,13 @@ export async function durableTaskWorkflow(input: TaskRunInput): Promise<TaskRunR
     attempts.push(...current);
     const best = current.reduce((left, right) => betterAttempt(left, right));
     const semantic = best.resultAssessment;
-    if (best.accepted) {
+    const integrationReady = semantic.integrationReady === true
+      && best.verification.complete === true && best.returnCode === 0;
+    const gate = completionGate({
+      integrationReady, taskReviewRequired: Boolean(taskAssessment.reviewRequired),
+      resultReviewRequired: best.reviewRequired, reviewApproved: false,
+    });
+    if (gate === "complete") {
       return finish({
         status: "complete",
         finalRisk: risk,
@@ -268,7 +275,6 @@ export async function durableTaskWorkflow(input: TaskRunInput): Promise<TaskRunR
         reviewNote: null,
       });
     }
-    const integrationReady = Boolean(semantic.integrationReady);
     const reviewRequired = Boolean(taskAssessment.reviewRequired) || best.reviewRequired;
     const intervention = String(semantic.intervention ?? "human_review");
     const needsReview =
@@ -277,7 +283,7 @@ export async function durableTaskWorkflow(input: TaskRunInput): Promise<TaskRunR
       if (task.waitForHumanReview) {
         const decision = await waitForReview();
         return finish({
-          status: decision.approved ? "complete" : "rejected",
+          status: !decision.approved ? "rejected" : integrationReady ? "complete" : "review_required",
           finalRisk: risk,
           selectedProvider: best.provider,
           taskAssessment,
