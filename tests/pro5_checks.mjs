@@ -9,7 +9,7 @@ const rates = (usedPercent = 20, secondary = null) => ({ rateLimits: {
   limitId: 'codex', primary: { usedPercent, windowDurationMins: 300, resetsAt: 5000 }, secondary,
 } });
 const state = (patch = {}) => ({ authMode: 'chatgpt', writerState: 'known', risk: 'R1', phase: 'implement',
-  currentEffort: 'medium', supportedEfforts: ['low', 'medium', 'high'], generations: 1,
+  allowEffortReduction: true, currentEffort: 'medium', supportedEfforts: ['low', 'medium', 'high'], generations: 1,
   noProgressGenerations: 0, repeatedFailures: 0, elapsedSeconds: 10, stepsSinceChange: 2,
   resolvedCheckpoints: 2, observedAt: 990, rateLimits: rates(), ...patch });
 
@@ -125,6 +125,7 @@ readline.createInterface({input:process.stdin}).on('line', line => {
   else if (r.method === 'model/list') result = r.params.cursor ? {data:[{model:'model_b',supportedReasoningEfforts:[{reasoningEffort:'high'}]}],nextCursor:null} : {data:[{model:'model_a',defaultReasoningEffort:'medium',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'medium'}]}],nextCursor:'next'};
   else if (r.method === 'experimentalFeature/list') result = {data:[{name:'step_model_switching',enabled:true}],nextCursor:null};
   else { process.exit(23); return; }
+  console.log('null');
   console.log(JSON.stringify({id:r.id,result}));
 });`;
 test('probe only reads metadata, follows pages and strips credentials', async () => {
@@ -142,4 +143,16 @@ test('probe reports incomplete pagination rather than returning complete capabil
 test('probe timeout and missing binaries fail boundedly', async () => {
   await assert.rejects(probe({ command: process.execPath, args: ['-e', 'setInterval(()=>{},1000)'], timeoutMs: 100 }));
   await assert.rejects(probe({ command: 'dt-test-nonexistent-executable', timeoutMs: 100 }));
+});
+
+test('acceptance preserves critical findings and systemic approval', () => {
+  const complete = { candidateComplete: true, checksPassed: true, scopeVerified: true, reviewPassed: true };
+  assert.equal(advise(state({ ...complete, unresolvedCritical: true }), 1000).action, 'review');
+  assert.equal(advise(state({ ...complete, risk: 'R4' }), 1000).action, 'review');
+  assert.equal(advise(state({ ...complete, risk: 'R4', humanApproved: true }), 1000).action, 'complete');
+});
+test('effort reduction requires an explicit trial', () => {
+  assert.equal(advise(Object.fromEntries(Object.entries(state()).filter(([key]) => key !== 'allowEffortReduction')), 1000).action, 'keep');
+  assert.equal(advise(state({ allowEffortReduction: false }), 1000).effort, 'medium');
+  assert.equal(advise(state({ allowEffortReduction: false, conceptualFailure: true }), 1000).effort, 'high');
 });

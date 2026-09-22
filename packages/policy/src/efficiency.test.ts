@@ -31,6 +31,11 @@ describe("Pro 5x usage accounting", () => {
     expect(ledger.summary()).toMatchObject({ requests: 3, generations: 1, prewarms: 1,
       compactions: 1, estimatedCredits: 27 });
   });
+  it("does not apply the Astra Fast rate to other models", () => {
+    const ledger = new UsageLedger();
+    ledger.record({ ...receipt, model: "gpt-5.6-luna", serviceTier: "fast" });
+    expect(ledger.summary()).toMatchObject({ pricingComplete: false, unpricedRequests: 1 });
+  });
   it("never calls unknown providers free or hides conflicting receipts", () => {
     const ledger = new UsageLedger();
     ledger.record({ ...receipt, provider: "another-provider" });

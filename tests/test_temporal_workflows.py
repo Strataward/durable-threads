@@ -13,6 +13,9 @@ pytest.importorskip("temporalio")
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
+from durable_threads import temporal_activities
+from durable_threads.execution import ExecutionRegistry
+from durable_threads.scripted import scripted_executor_plugin
 from durable_threads.temporal_activities import (
     assess_result_activity,
     assess_task_activity,
@@ -22,6 +25,17 @@ from durable_threads.temporal_activities import (
 )
 from durable_threads.temporal_contracts import ReviewDecision, TaskRunInput
 from durable_threads.temporal_workflows import AgentExecutionWorkflow, DurableTaskWorkflow
+
+
+@pytest.fixture(autouse=True)
+def scripted_registry(monkeypatch):
+    """Keep workflow tests independent of installed provider tools."""
+    def registry(**_kwargs):
+        result = ExecutionRegistry()
+        result.register(scripted_executor_plugin())
+        return result
+
+    monkeypatch.setattr(temporal_activities, "default_execution_registry", registry)
 
 
 def _git_repo(path) -> None:

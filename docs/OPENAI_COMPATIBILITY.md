@@ -63,6 +63,10 @@ Sources:
 
 The TypeScript self-host plane and Python Temporal helper are not required by the plugin. Managed APIs and Jev have separate authentication/billing and must not be presented as included Pro resources. Read [the optimization audit](PRO5_OPTIMIZATION.md) for known self-host acceptance, provenance and recovery hardening needs before production deployment.
 
+## Integration check on 2026-09-22
+
+The installed Codex CLI exposes `plugin add` and `plugin marketplace`. The official plugin guide still supports bundled skills. The pricing page confirms the listed Standard rates. Credit estimates do not measure subscription allowance.
+
 ## Validation boundary
 
 Run native offline tests, repository tests, TypeScript typecheck, Python lint/compile and packaging validation before merging. Verify the installed binary separately: mock protocol tests and source inspection cannot certify live Astra behavior or account savings. No public hosted deployment, public directory listing, global config modification or automatic feature enablement is claimed.

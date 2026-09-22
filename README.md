@@ -5,7 +5,7 @@
 
 **Useful frontier work. Bounded execution. Evidence before acceptance.**
 
-Durable Threads is a risk- and allowance-aware policy layer for coding-agent runtimes. The Codex plugin is the product; the TypeScript self-host plane and Python helper are optional. The native skill guides behavior. It does not replace Codex's sandbox, enforce account quotas, or provide a hosted service.
+Durable Threads is a Codex plugin that helps coding agents keep work in scope, choose useful handoffs, and check results. Install the plugin to use the core workflow. The Python helper and self-hosted TypeScript runtime are optional.
 
 ## Install and work
 
@@ -17,37 +17,30 @@ codex plugin add durable-threads@strataward
 Start a new session and ask for bounded work:
 
 ```text
-Use Durable Threads. Fix refresh-token rotation in src/auth and tests/auth.
-Preserve the existing public API. Run focused tests and typecheck.
-Require independent security review before acceptance.
+Use Durable Threads to fix the failing test.
+Keep the change small. Run the relevant checks.
+Report the changed files and any remaining concerns.
 ```
 
 No roster, extra model provider, Node installation, Jev key or Temporal server is required for this workflow.
 
-## Astra-first value on Pro 5x
+## When this helps
 
-Ask:
+Use Durable Threads when a change needs clear scope, a useful handoff, or independent review. It gives each worker a small contract. It asks the planner to inspect the diff and verify the result before acceptance.
 
-```text
-Use Durable Threads' Astra-first Pro 5x profile. Keep Astra and standard speed.
-Preserve my working reasoning setting; trial lower effort only on bounded work.
-Use one active writer and at most one justified helper. Batch independent reads,
-keep logs bounded, run required checks once per relevant code state, and stop
-when acceptance passes. Do not silently switch models, billing, or approvals.
-```
+For a small edit, keep the work in the current task. You do not need to create an agent team.
 
-The profile prioritizes fewer unnecessary model responses and less irrelevant context, rather than indiscriminately reducing reasoning. High effort can be economical when it avoids repeated mistakes. Required checks and independent R3/R4 review remain mandatory.
+A result should tell you:
 
-See [the Pro 5x profile](plugins/durable-threads/skills/durable-threads/references/PRO5.md) and [the dated audit and validation plan](docs/PRO5_OPTIMIZATION.md).
+- Which files changed.
+- Which checks ran and what they found.
+- Which requirements remain unverified.
 
-Optional local diagnostics require Node 20+. From this checkout:
+## Optional allowance tools
 
-```bash
-node plugins/durable-threads/skills/durable-threads/scripts/pro5.mjs probe
-node plugins/durable-threads/skills/durable-threads/scripts/pro5.mjs audit /explicit/path/to/rollout.jsonl
-```
+You can use the plugin with your current model and settings. No Pro 5x profile is required.
 
-The probe reads Codex account/model/feature metadata without requesting a model turn or changing config. The audit reads only selected files and avoids double-counting cumulative usage. Neither establishes the user's plan multiplier, proves exact billing, or provides live per-step control. No measured subscription-extension multiplier is claimed.
+For Astra-specific settings and local diagnostics, see [the optional allowance guide](docs/PRO5_OPTIMIZATION.md). These tools do not prove subscription savings.
 
 ## Operating policy
 

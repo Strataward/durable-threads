@@ -80,7 +80,9 @@ export class UsageLedger {
       outputTokens += item.outputTokens;
       reasoningTokens += item.reasoningTokens;
       const rate = item.provider === "openai" ? CREDIT_RATES[item.model] : undefined;
-      if (!rate) { unpricedRequests += 1; continue; }
+      if (!rate || (item.serviceTier === "fast" && item.model !== "gpt-6-astra")) {
+        unpricedRequests += 1; continue;
+      }
       estimatedCredits += (
         (item.inputTokens - item.cachedInputTokens) * rate[0]
         + item.cachedInputTokens * rate[1] + item.outputTokens * rate[2]

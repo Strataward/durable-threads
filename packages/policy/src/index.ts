@@ -30,6 +30,9 @@ export { PacketError, buildPacket } from "./packets.js";
 export { classifyRisk, meetsThreshold, validateRisk, type RiskAssessment } from "./risk.js";
 export {
   catalogFromPayload,
+  catalogPageFromPayload,
+  readModelCatalog,
+  resolveReasoningEffort,
   resolveModel,
   selectWorkers,
   type ModelInfo,

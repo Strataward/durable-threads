@@ -51,7 +51,7 @@ export function quotaStatus(payload, nowSeconds, { limitId = 'codex', reservePer
 /** Pure advisory governor. The plugin cannot intercept Codex inference or enforce account limits. */
 export function advise(state, nowSeconds) {
   if (!record(state) || !finite(nowSeconds)) throw new Error('Expected an explicit state object and time');
-  for (const key of ['cancelled', 'reviewRequired', 'reviewPassed', 'candidateComplete', 'checksPassed', 'scopeVerified', 'humanApproved', 'conceptualFailure', 'unresolvedCritical']) {
+  for (const key of ['cancelled', 'reviewRequired', 'reviewPassed', 'candidateComplete', 'checksPassed', 'scopeVerified', 'humanApproved', 'conceptualFailure', 'unresolvedCritical', 'allowEffortReduction']) {
     if (key in state && typeof state[key] !== 'boolean') throw new Error(`Invalid flag: ${key}`);
   }
   const reply = (action, reason, effort = state.currentEffort ?? null) => ({
@@ -62,6 +62,8 @@ export function advise(state, nowSeconds) {
   if (state.writerState !== 'known') return reply('stop', 'Reconcile writer state before retrying');
   if (!['R0', 'R1', 'R2', 'R3', 'R4'].includes(state.risk)) throw new Error('Invalid risk class');
   const reviewRequired = state.reviewRequired === true || ['R3', 'R4'].includes(state.risk);
+  if (state.candidateComplete === true && state.unresolvedCritical === true) return reply('review', 'Resolve the critical finding before acceptance');
+  if (state.candidateComplete === true && state.risk === 'R4' && state.humanApproved !== true) return reply('review', 'Systemic work requires approval');
   if (state.candidateComplete === true && state.checksPassed === true && state.scopeVerified === true) {
     return reviewRequired && state.reviewPassed !== true
       ? reply('review', 'Independent review is still required')
@@ -97,6 +99,7 @@ export function advise(state, nowSeconds) {
     levels.indexOf(x) <= 2 && supported.includes(x));
   if (!target) return reply('inspect_capabilities', 'No supported effort within the automatic high-effort cap');
   const down = levels.indexOf(target) < levels.indexOf(state.currentEffort);
+  if (down && state.allowEffortReduction !== true) return reply('keep', 'Preserve the selected effort until a trial is authorized');
   if (down && (state.stepsSinceChange < 2 || state.resolvedCheckpoints < 2 || state.unresolvedCritical === true)) {
     return reply('keep', 'Downshift requires two resolved checkpoints and a two-step cooldown');
   }
@@ -203,6 +206,7 @@ export async function probe({ command = 'codex', args = ['app-server'], timeoutM
       const line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
       let message;
       try { message = JSON.parse(line); } catch { continue; }
+      if (!record(message)) continue;
       if (message.method && message.id !== undefined) {
         // Fail closed on unexpected server requests rather than approve tools or login.
         child.stdin.write(JSON.stringify({ id: message.id, error: { code: -32601, message: 'Metadata-only client' } }) + '\n');

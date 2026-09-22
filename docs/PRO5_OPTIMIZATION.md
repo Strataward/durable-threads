@@ -51,6 +51,7 @@ Example state fields (timestamps must be current epoch seconds):
   "risk": "R1",
   "phase": "implement",
   "currentEffort": "medium",
+  "allowEffortReduction": false,
   "supportedEfforts": ["low", "medium", "high"],
   "generations": 3,
   "noProgressGenerations": 0,
@@ -71,7 +72,7 @@ node plugins/durable-threads/skills/durable-threads/scripts/pro5.mjs advise /pat
 
 The example intentionally requests a quota refresh rather than pretending an account has allowance. Rate-limit input follows the documented `account/rateLimits/read` response. Never synthesize fresh observations from a stale probe. The supplied effort list must come from the selected model, not the example.
 
-Trial limits: 60 generations, 30 minutes, four no-progress generations, two repeated failures and a 10% reserve. These are deliberately bounded DT experiment defaults in the script, not published Pro limits or an optimal universal allocation. Split genuine milestones rather than resetting identifiers to evade a stop. Required checks, scope evidence and independent review take precedence over completion claims. Human approval cannot replace a failed check. A two-step/two-checkpoint cooldown prevents automatic downshift oscillation.
+Trial limits: 60 generations, 30 minutes, four no-progress generations, two repeated failures and a 10% reserve. These are deliberately bounded DT experiment defaults in the script, not published Pro limits or an optimal universal allocation. Split genuine milestones rather than resetting identifiers to evade a stop. Required checks, scope evidence and independent review take precedence over completion claims. Human approval cannot replace a failed check. Effort reduction requires `allowEffortReduction: true`. Keep it false unless the user authorizes a trial. A two-step/two-checkpoint cooldown limits repeated changes.
 
 ## Corrections to earlier architecture claims
 
@@ -85,7 +86,7 @@ Model-side `configuration_update` is a different capability. Do not inject it in
 
 These are audit findings, not fixed or certified by the native profile:
 
-1. `apps/api/src/local-runtime.ts` accepts `result.accepted` before combining the task's independent-review requirement. Its human-review branch can report completion on approval without requiring passing verification. The Python Temporal workflow has related acceptance paths. Add regression tests and unify evidence/review gates before production use.
+1. `apps/api/src/local-runtime.ts` accepts `result.accepted` before combining the task's independent-review requirement. Its human-review branch can report completion on approval without requiring passing verification. The TypeScript and Python Temporal workflows now preserve task review and require verification before completion. The local API runtime still needs the same protection before production use.
 2. Existing worker-reported check strings plus Git-path validation do not prove the checks ran successfully. Add trusted command receipts tied to a workspace revision and target acceptance, then invalidate them after relevant mutations.
 3. Some durable routing paths collapse executor identity into provider identity, and generic effort ladders do not consult model capabilities. Wire the new catalog resolver into each runtime before claiming live provider-neutral escalation.
 4. A durable wrapper around a long-running CLI does not by itself provide deduplicated side effects, safe reattachment, process-tree cancellation or workspace fencing. Test crash-after-side-effect and unknown-writer recovery explicitly.
