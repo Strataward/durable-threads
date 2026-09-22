@@ -1,58 +1,29 @@
 # Astra operating guide
 
-Astra is a scarce frontier resource in the Durable Threads economy profile. Use it where additional reasoning can change an important decision—not as the default long-running executor.
+Respect the user's Astra preference. It may be the right implementation worker as well as planner, especially when the current thread already has useful context. Do not impose a second cheaper model merely because one is available. Use `PRO5.md` for the Astra-first longevity profile.
 
-This is role policy. It does not imply that every account/runtime has Astra or that Astra is always the right frontier choice.
+## Availability and reasoning
 
-## Availability
+Discover the exact model slug and advertised reasoning levels. Unknown capability metadata is not permission to guess. A missing explicit model should be reported, not silently substituted. Keep successful existing settings as the baseline, then test lower effort on bounded tasks with unchanged acceptance criteria.
 
-Check the live Codex catalog and current account allowance before selection. Use a model ID or tier the runtime actually exposes. If the preferred frontier model is unavailable, report that fact and use the declared fallback rather than guessing a versioned slug.
+Suggested experiments: low for resolved mechanical work; medium for integration and ambiguity; high when repeated conceptual failure or unresolved critical risk justifies it. XHigh/max requires an explicit experiment. Use high when it saves total rework; do not turn "use fewer tokens" into underthinking.
 
-## Where frontier reasoning earns its cost
+## High-value context
 
-Good Astra use cases include architecture and decomposition, contradictory requirements, R3/R4 security/privacy/migration/production decisions, diagnosing repeated conceptual worker failure, and broad final integration review.
+Start with the objective, decisions, invariants, relevant paths, current evidence and the unresolved question. Avoid unrelated transcript dumps. Keep failed approaches in a concise handoff so a new task does not repeat them. A fresh context is useful only when the saved ongoing overhead exceeds the cost of rebuilding useful understanding.
 
-Poor Astra use cases include waiting for workers, polling status, routine code edits, rerunning known checks, formatting, or reviewing every small diff simply because Astra is available.
+## Verification and stopping
 
-## Reasoning effort
+Use deterministic tools for checks; models interpret material failures. Run required checks at the appropriate boundary and repeat after relevant changes, not out of habit. R3/R4 requires independent review. Unknown writer state and failed evidence must stop acceptance. Retain safety rules under quota pressure.
 
-A practical economy profile is:
+## What not to assume
 
-| Effort | Use |
-| --- | --- |
-| `low` | default frontier planner or narrow consequential review |
-| `medium` | difficult architecture or R3/R4 review |
-| `high` | exceptional task with evidence that more exploration is useful |
-| `xhigh` / `max` | benchmarked or pathological cases, not the default |
+An experimental active-turn settings acknowledgement is not evidence that a particular next generation changed effort. Do not edit global config mid-run to simulate a live switch. Do not lower approval authority. Do not infer quota savings from raw tokens or API pricing, and do not assume Pro includes API/Jev billing.
 
-Higher effort can increase latency and allowance consumption. More reasoning is useful when the problem needs it, not as a universal quality switch.
+The native skill is advisory. The bundled local diagnostics measure reported metadata and selected response records; they do not hook or control the internal Astra loop.
 
-## Frontier + workhorse pattern
+Audited 2026-09-22. Sources:
 
-```mermaid
-flowchart LR
-    A1["Frontier<br/>plan + acceptance"] --> C["Freeze contract"] --> W["Efficient XHigh<br/>implementation"] --> V["Deterministic checks"] --> G{"Review gate"}
-    G -->|"Below threshold"| I["Integrate"]
-    G -->|"Consequential"| A2["Frontier / specialist<br/>review"]
-    A2 --> I
-```
-
-## Sleeping orchestrator
-
-A frontier parent should not burn turns monitoring healthy execution. Dispatch, wait through the provider's bounded/event-driven mechanism where available, and wake the frontier model only when material evidence requires another decision.
-
-Related Codex reports:
-
-- https://github.com/openai/codex/issues/35108
-- https://github.com/openai/codex/issues/41875
-
-## Context
-
-Do not transfer an old transcript just because a larger context window can hold it. Give the frontier reviewer the current objective, frozen decisions, invariants, relevant paths, acceptance evidence, and the unresolved decision it needs to make.
-
-## Current OpenAI references
-
-- https://help.openai.com/en/articles/20001516
-- https://developers.openai.com/api/docs/models
-
-See `MODEL_ECONOMICS.md` for the provider-neutral policy.
+- https://developers.openai.com/api/docs/guides/latest-model
+- https://learn.chatgpt.com/docs/pricing
+- https://learn.chatgpt.com/docs/app-server

@@ -1,138 +1,68 @@
 # OpenAI compatibility and documentation audit
 
-Last audited: **2026-09-19**.
+Last audited: **2026-09-22**. Native Pro 5x optimization scope; prior 2026-09-19 install/runtime research is retained in linked references. This document distinguishes official interfaces, source-observed experiments and Durable Threads policy.
 
-This document separates current OpenAI product behavior from Durable Threads policy. Product surfaces move quickly; re-check the linked sources when installation, packaging, subagent, model, or worktree semantics matter.
+## Plugin and native runtime
 
-## Current OpenAI behavior used by this repository
-
-### Skills author reusable workflows
-
-OpenAI describes skills as reusable workflows made from instructions plus optional resources/scripts. Codex can discover local skills from supported `.agents/skills` locations, and skills can also be bundled inside plugins.
-
-**Durable Threads consequence:** the workflow has one canonical `SKILL.md` tree under the plugin.
-
-### Plugins distribute reusable capabilities
-
-Durable Threads follows the current Codex plugin layout: plugin manifest under `.codex-plugin/plugin.json`, bundled skills under `skills/`, and a repository marketplace under `.agents/plugins/marketplace.json`.
-
-**Durable Threads consequence:** **plugin = distribution; bundled skill = workflow implementation**. They are not two products a normal user must install separately.
-
-Sources:
-
-- https://github.com/openai/codex/tree/main/codex-rs/skills/src/assets/samples/plugin-creator
-- https://github.com/openai/codex/blob/main/codex-rs/skills/src/assets/samples/plugin-creator/references/plugin-json-spec.md
-
-### Git repository marketplace sources
-
-The current Codex CLI accepts Git marketplace sources and exposes a marketplace refresh command.
-
-Install:
+Durable Threads has one canonical skill under `plugins/durable-threads/skills/durable-threads/`. The plugin distributes that workflow and its optional resources/scripts. Do not add a separate skill install surface. The existing marketplace install remains:
 
 ```bash
 codex plugin marketplace add Strataward/durable-threads --ref main
 codex plugin add durable-threads@strataward
 ```
 
-Update an installed copy:
+Update the Git marketplace snapshot before reinstalling an existing plugin:
 
 ```bash
 codex plugin marketplace upgrade strataward && codex plugin add durable-threads@strataward
 ```
 
-The CLI currently exposes `add`, `list`, `marketplace`, and `remove` at the plugin level; updating a Git-backed plugin is therefore modeled as refreshing the marketplace snapshot and reinstalling the plugin rather than calling a nonexistent `codex plugin update` command.
+Native explorer/worker roles, configured custom reviewers and native wait/resume remain the preferred runtime. Model/effort and concurrency controls depend on the installed build and effective managed configuration. Worktree support is not evidence of semantic independence. The plugin cannot enforce the host sandbox by itself.
 
 Sources:
 
+- https://learn.chatgpt.com/docs/build-plugins
+- https://learn.chatgpt.com/docs/config-file/config-reference
 - https://github.com/openai/codex/blob/main/codex-rs/cli/src/marketplace_cmd.rs
 - https://github.com/openai/codex/blob/main/codex-rs/cli/src/plugin_cmd.rs
-
-### Native Codex agent roles
-
-Current Codex includes built-in agent roles including `explorer` and `worker`. The runtime applies role-specific configuration to spawned children and exposes project/user-defined role configuration.
-
-**Durable Threads consequence:** native Codex subagents are the preferred default execution mechanism. Durable Threads maps discovery to `explorer`, bounded implementation/debugging to `worker`, and independent review to a read-only custom/default role.
-
-Source:
-
 - https://github.com/openai/codex/blob/main/codex-rs/core/src/agent/role.rs
 
-### Native agent configuration
+## Account and model metadata
 
-Current Codex configuration includes agent-level controls such as:
+The read-only native probe uses documented `account/read`, `account/rateLimits/read`, `model/list` and `experimentalFeature/list` methods after initialization. Catalogs are paginated. The real `model/list` response uses `result.data`; its `model` field is the request slug. Effort options are advertised per model. Unsupported or incomplete metadata must remain unknown rather than becoming an invented capability.
 
-- `agents.default_subagent_model`
-- `agents.default_subagent_reasoning_effort`
-- `agents.max_concurrent_threads_per_session`
+A `pro` label alone does not establish the 5x/20x multiplier. Current account-window signals are separate from cumulative model token totals and separately billed API usage. The diagnostic never changes account settings or consumes reset credits.
 
-**Durable Threads consequence:** model/effort and fan-out policy can compile into native runtime controls instead of requiring a second scheduler.
+Source: https://learn.chatgpt.com/docs/app-server
 
-Sources:
+## Experimental live control
 
-- https://github.com/openai/codex/blob/main/codex-rs/config/src/config_toml.rs
-- https://github.com/openai/codex/blob/main/codex-rs/core/config.schema.json
+Active-turn settings publication is distinct from future thread defaults and from model-side reasoning configuration updates. A feature flag or published update is not proof that a specific next generation captured it. Changes do not retroactively alter already captured steps. Exact boundary control needs runtime testing and receipts; it is not implemented by the native Pro5 diagnostic.
 
-### Project-defined agents
-
-Current Codex supports project agent-role files under `.codex/agents/`. Role configuration can constrain model/reasoning behavior, instructions, and sandbox mode.
-
-**Durable Threads consequence:** the repository ships optional read-only reviewer/security examples under `examples/codex-agents/`, but normal users do not need to install them.
+Approval reviewer selection is authorization routing, not a completed independent code review. `process/*` runs outside the Codex sandbox and must not be substituted for sandboxed execution to reduce overhead. Temporal heartbeats are not a per-step audit ledger.
 
 Sources:
 
-- https://github.com/openai/codex/blob/main/codex-rs/external-agent-migration/src/scope.rs
-- https://github.com/openai/codex/blob/main/codex-rs/core/src/agent/role.rs
+- https://learn.chatgpt.com/docs/app-server
+- https://developers.openai.com/api/docs/guides/latest-model
+- https://github.com/openai/codex/blob/main/codex-rs/core/src/session/step_activation.rs
 
-### Worktree support
+## Durable Threads policy, not an OpenAI guarantee
 
-Recent Codex releases added experimental worktree support for isolated checkouts.
+The Astra-first profile, one-helper starting limit, phase-based effort experiments, risk classes, correction budget, reserve percentage and stopping thresholds are project choices. They require matched quality/cost evaluation. They do not establish a fixed subscription lifetime, a quota multiplier or an optimal reasoning level.
 
-**Durable Threads consequence:** the policy is **subagents for parallel cognition, worktrees for parallel mutation**. Multiple independent writers should prefer isolated worktrees when supported; overlapping writers should be serialized.
-
-Source:
-
-- https://github.com/openai/codex/releases
-
-### OpenAI Agents API
-
-OpenAI announced the Agents API on September 10, 2026. It exposes the managed Codex harness for cloud/headless execution and supports multi-agent configuration with `enabled` plus `max_concurrent_subagents`.
-
-**Durable Threads consequence:** the Agents API is a natural optional backend for CI/SaaS/automation and richer telemetry, but it is not required for normal plugin use.
+Keep a proven reasoning baseline; test low effort on bounded work rather than downgrading everything. Preserve explicit model selection and required acceptance/review gates. Do not enable Fast mode, extra providers or experimental controls without the user's intent.
 
 Sources:
 
-- https://openai.com/index/introducing-the-agents-api/
-- https://developers.openai.com/api/reference/typescript/resources/beta/subresources/agents/methods/create
-- https://developers.openai.com/api/reference/typescript/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/methods/list
+- https://learn.chatgpt.com/docs/pricing
+- https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan
+- https://developers.openai.com/api/docs/guides/latest-model
 
-## Durable Threads policy — not an OpenAI guarantee
+## Optional control planes
 
-The following are project choices or empirical strategies:
+The TypeScript self-host plane and Python Temporal helper are not required by the plugin. Managed APIs and Jev have separate authentication/billing and must not be presented as included Pro resources. Read [the optimization audit](PRO5_OPTIMIZATION.md) for known self-host acceptance, provenance and recovery hardening needs before production deployment.
 
-- efficient high/XHigh implementation as a preferred workhorse strategy
-- R0–R4 consequence classification
-- frontier/specialist review at R3+ by default
-- the sleeping-orchestrator invariant
-- one focused correction by default
-- escalation from efficient -> balanced -> frontier
-- `explorer`/`worker` role mapping for our workflow
-- the worktree isolation rule for parallel writers
-- any claim about relative quota efficiency or task-level model performance
+## Validation boundary
 
-The docs should label these as policy, recommendation, or observed behavior rather than attributing them to OpenAI.
-
-## Claims we intentionally avoid
-
-We do not claim that Durable Threads is currently listed in the public Plugin Directory, that every ChatGPT surface can install directly from this GitHub repository, that plugin installation configures Claude/Grok/Cursor, that model names or allowance ratios are permanent, that worktrees make overlapping changes semantically safe, or that Durable Threads itself enforces the host sandbox.
-
-## Release audit checklist
-
-Before changing installation or compatibility docs:
-
-1. Check the current Codex plugin creator/spec and plugin CLI.
-2. Check native agent-role implementation and agent config fields.
-3. Check current release notes for worktree/subagent behavior.
-4. Check the current Agents API docs if managed execution is discussed.
-5. Confirm supported product surfaces.
-6. Run repository validation and CI.
-7. Update the audit date.
+Run native offline tests, repository tests, TypeScript typecheck, Python lint/compile and packaging validation before merging. Verify the installed binary separately: mock protocol tests and source inspection cannot certify live Astra behavior or account savings. No public hosted deployment, public directory listing, global config modification or automatic feature enablement is claimed.
