@@ -3,294 +3,116 @@
 [![CI](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml/badge.svg)](https://github.com/Strataward/durable-threads/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache-2.0-blue.svg)](LICENSE)
 
-**Frontier decisions. Workhorse execution. Native agents. Deterministic verification.**
+**Useful frontier work. Bounded execution. Evidence before acceptance.**
 
-Durable Threads is a risk- and cost-aware policy layer for coding-agent runtimes. It sits on top of Codex (or any LLM-powered Codex-compatible runtime) and makes high-level delegation decisions so the runtime can execute efficiently. You get cheaper, safer multi-agent coding without a second orchestrator.
+Durable Threads is a risk- and allowance-aware policy layer for coding-agent runtimes. The Codex plugin is the product; the TypeScript self-host plane and Python helper are optional. The native skill guides behavior. It does not replace Codex's sandbox, enforce account quotas, or provide a hosted service.
 
----
-
-## Quick start: Install + delegate your first task
-
-### 1. Install the plugin
+## Install and work
 
 ```bash
 codex plugin marketplace add Strataward/durable-threads --ref main
 codex plugin add durable-threads@strataward
 ```
 
-### 2. Start a new Codex session
-
-The bundled skill loads automatically. Your first prompt can be natural:
+Start a new session and ask for bounded work:
 
 ```text
-Use Durable Threads to implement refresh-token rotation for my service.
+Use Durable Threads. Fix refresh-token rotation in src/auth and tests/auth.
+Preserve the existing public API. Run focused tests and typecheck.
+Require independent security review before acceptance.
 ```
 
-### 3. See the work get done
+No roster, extra model provider, Node installation, Jev key or Temporal server is required for this workflow.
 
-Durable Threads will:
+## Astra-first value on Pro 5x
 
-1. Decide whether delegation helps (keep small, dependent, or already well-contextualized work in the current task; delegate when narrower context, independent ownership, lower-cost execution, or parallel read-heavy work improves the result)
-2. Classify risk R0–R4 (consequence, not code difficulty)
-3. Freeze a bounded implementation contract
-4. Choose the native Codex role (`explorer` for read-heavy, `worker` for execution)
-5. Pick an economical model (efficient + high reasoning for bounded work; frontier only when consequence warrants it)
-6. Execute and verify deterministically (tests, typechecks, linters before any human review)
-7. Report results and escalate from evidence, not prestige
-
----
-
-## Who it is for
-
-- Codex users who want cheaper, safer multi-agent coding without a second orchestrator
-- Teams who want to self-host the same policy loop locally via the TypeScript control plane
-- Organizations that need risk-aware routing (R0–R4) and deterministic verification
-
-## Who it is not for
-
-- People who want Durable Threads to replace Codex spawn, wait, or resume
-- People looking for a hosted sign-up product (none exists in this repository)
-
----
-
-## What's new in 0.6
-
-Codex now has a first-class native multi-agent runtime with built-in `explorer` and `worker` roles, configurable subagent model/reasoning defaults, concurrency controls, custom agent roles, native waiting/resume behavior, and experimental worktree support. Durable Threads treats those capabilities as the preferred Codex execution substrate rather than trying to recreate them.
-
-0.6 also adds optional durability:
-
-- An in-repo **TypeScript control plane** for localhost self-host (Temporal, human gates, local UI)
-- A **Python Temporal helper** for the existing CLI durable-mode path
-
-The core rule:
-
-> **Use the host's native agent runtime whenever it is capable enough. Durable Threads owns policy, not process management.**
-
-That yields a cleaner architecture:
-
-```mermaid
-flowchart LR
-    U["User objective"] --> DT
-    subgraph DT["Durable Threads policy"]
-        direction TB
-        D["Delegate?"] --> R["Classify R0-R4"]
-        R --> C["Freeze contract"]
-        C --> M["Choose role / model / effort"]
-        M --> P["Choose parallelism / isolation"]
-    end
-    P --> RT
-    subgraph RT["Execution runtime"]
-        direction TB
-        E["Native explorer"]
-        W["Native worker"]
-        X["Custom reviewer / specialist"]
-    end
-    RT --> V["Deterministic verification"]
-    V --> G["Risk / ambiguity gate"]
-    G -- "pass" --> I["Integrate"]
-    G -- "needs review" --> Q["Independent review / escalation"]
-    Q --> I
-```
-
----
-
-## Native Codex policy
-
-Durable Threads maps common work onto Codex's native roles instead of inventing a parallel scheduler:
-
-| Work | Preferred native shape |
-| --- | --- |
-| codebase questions / read-heavy discovery | `explorer` |
-| bounded implementation / debugging | `worker` |
-| routine independent review | read-only custom reviewer when available, otherwise default agent |
-| R3/R4 security review | read-only specialist/frontier reviewer |
-
-The model policy remains economic rather than prestige-driven:
-
-| Job | Starting policy |
-| --- | --- |
-| bounded implementation / debugging | efficient model + high/XHigh reasoning |
-| difficult general planning | balanced model + medium reasoning |
-| consequential architecture / review | frontier model + low or medium reasoning |
-| R3/R4 security or systemic work | independent specialist/frontier review |
-
-Durable Threads resolves against live model availability where possible instead of treating today's model IDs as permanent.
-
-## Subagents for cognition, worktrees for mutation
-
-Native subagents share the active project environment. That is excellent for parallel reading and analysis, but multiple writers need stronger coordination.
-
-Durable Threads therefore uses this default rule:
-
-- parallel explorers/reviewers: safe when independent and read-only
-- one bounded writer: shared checkout is fine
-- multiple independent writers: prefer isolated worktrees when the runtime supports them
-- overlapping write ownership: serialize instead of hoping a merge resolves semantic conflicts
-
-**Subagents for parallel cognition. Worktrees for parallel mutation.**
-
-The optional Python helper exposes the same idea through `durable_threads.native.recommend_native_execution(...)`, which returns inspectable execution hints without spawning Codex itself.
-
-## Implementation contracts
-
-Delegation is driven by a bounded contract, not a transcript dump:
+Ask:
 
 ```text
-OBJECTIVE
-Implement refresh-token rotation.
-
-DECISIONS ALREADY MADE
-- Redis remains the state store.
-- Replay invalidates the token family.
-
-INVARIANTS
-- Existing access-token behavior stays unchanged.
-- Refresh tokens are never stored plaintext.
-
-NON-GOALS
-- Do not redesign the JWT abstraction.
-
-ALLOWED PATHS
-- src/auth/**
-- tests/auth/
-
-ACCEPTANCE
-- Refresh succeeds exactly once.
-- Replay is rejected.
-- Focused tests and typecheck pass.
+Use Durable Threads' Astra-first Pro 5x profile. Keep Astra and standard speed.
+Preserve my working reasoning setting; trial lower effort only on bounded work.
+Use one active writer and at most one justified helper. Batch independent reads,
+keep logs bounded, run required checks once per relevant code state, and stop
+when acceptance passes. Do not silently switch models, billing, or approvals.
 ```
 
-The planner makes important decisions once; the workhorse executes against a narrow contract; machines verify what machines can verify; stronger review is added only when consequence or evidence warrants it.
+The profile prioritizes fewer unnecessary model responses and less irrelevant context, rather than indiscriminately reducing reasoning. High effort can be economical when it avoids repeated mistakes. Required checks and independent R3/R4 review remain mandatory.
 
-## Risk model
+See [the Pro 5x profile](plugins/durable-threads/skills/durable-threads/references/PRO5.md) and [the dated audit and validation plan](docs/PRO5_OPTIMIZATION.md).
 
-Risk measures consequence, not how difficult the code feels:
+Optional local diagnostics require Node 20+. From this checkout:
 
-| Class | Meaning | Typical examples |
+```bash
+node plugins/durable-threads/skills/durable-threads/scripts/pro5.mjs probe
+node plugins/durable-threads/skills/durable-threads/scripts/pro5.mjs audit /explicit/path/to/rollout.jsonl
+```
+
+The probe reads Codex account/model/feature metadata without requesting a model turn or changing config. The audit reads only selected files and avoids double-counting cumulative usage. Neither establishes the user's plan multiplier, proves exact billing, or provides live per-step control. No measured subscription-extension multiplier is claimed.
+
+## Operating policy
+
+Keep the current task as planner and integrator. Delegate only when startup, context, correction and review costs are justified. Prefer native `explorer` for focused reading, `worker` for bounded implementation, and read-only independent reviewers when needed.
+
+Freeze the objective, decisions, invariants, non-goals, allowed paths and acceptance checks before delegation. A worker should not rediscover the architecture or receive an entire transcript for a narrow question.
+
+Use native wait/resume rather than repeated model polling. Batch independent reads and checks; do not batch dependent mutations. Inspect the actual diff and run required tests once per relevant code state. A reported test result is a claim until tied to execution evidence. Stop after target acceptance rather than launching speculative improvement loops.
+
+| Risk | Consequence | Acceptance policy |
 | --- | --- | --- |
-| R0 | mechanical | docs, formatting, typo, narrow rename |
-| R1 | bounded | isolated feature or bug fix |
-| R2 | integration | API contracts, queues, webhooks, caches |
-| R3 | critical | auth, payments, privacy, destructive migration, concurrency |
-| R4 | systemic | distributed architecture, control plane, recovery design |
+| R0 | Mechanical changes | Focused deterministic checks |
+| R1 | Bounded feature/bug | Scoped checks and diff inspection |
+| R2 | Cross-component contracts | Integration/contract coverage |
+| R3 | Auth, privacy, payments, destructive data, concurrency | Independent specialist/frontier review |
+| R4 | Systemic architecture or recovery | Explicit approval and independent review |
 
-R0/R1 usually need strong deterministic checks rather than expensive independent review. R3/R4 justify independent specialist/frontier review by default.
+**Subagents for parallel cognition. Worktrees for parallel mutation.** Multiple writers need disjoint ownership and actual isolation; overlapping changes must be serialized. A worktree alone does not make changes semantically independent.
 
-## Optional custom Codex roles
+Preserve an explicitly chosen model. Use live catalog slugs and advertised reasoning levels. The optional hybrid economy strategy is an alternative, not a silent downgrade from Astra. Quota pressure should pause or narrow work, not remove safety gates.
 
-The repository includes read-only examples under `examples/codex-agents/`:
+## Optional control plane and Python helper
 
-- `dt-reviewer.toml` — independent read-only reviewer
-- `dt-security.toml` — independent read-only security reviewer
-
-Teams that want persistent native reviewer roles can copy/adapt them into the repository's `.codex/agents/` directory. They intentionally do not pin a model ID; model choice remains a routing decision unless reproducibility requires a pin.
-
-## Self-host the control plane
-
-This repository includes an optional TypeScript control plane for localhost Temporal, human gates, and a local UI. Plugin users can ignore it.
-
-See [Self-host the TypeScript control plane](docs/SAAS.md). There is no public hosted deployment in this repository.
-
-## Optional Python helper
-
-The Python helper supports deterministic rosters, R0-R4 routing, provider session IDs, structured evidence, benchmark records, native-runtime execution hints, and the existing Temporal + Jev CLI durable mode.
-
-It is not on PyPI and is not the long-term control plane. Clone this repository and install from the checkout:
+[Self-host the TypeScript control plane](docs/SAAS.md) for localhost Temporal, human gates and a UI. There is no public sign-up deployment. Python remains an optional helper and CLI durable-mode path until TypeScript parity; it is not on PyPI:
 
 ```bash
 python3 -m pip install -e '.[dev]'
-```
-
-Durable mode extras:
-
-```bash
+# Optional Jev and Temporal dependencies:
 python3 -m pip install -e '.[durable]'
 ```
 
-Reference configurations live in `examples/`. Installing Durable Threads does not install or authenticate Claude Code, Grok Build, or Cursor Agent; those adapters remain opt-in.
+[Temporal + Jev](docs/TEMPORAL_JEV.md) provide optional orchestration and typed decisions. They are not required to extend useful native Astra work. Jev is separately billed/configured. Temporal cannot stop a nested agent's internal polling without a runtime integration, and heartbeats are not a complete decision ledger.
 
-Native Codex remains the zero-infrastructure default. For long-lived or cross-provider work, the Python helper's durable mode uses:
-
-- **TypeSafe Jev** for fast, typed probabilistic judgments
-- **Temporal** for durable workflow state, retries, signals, crash recovery, and human-review waits
-- **Durable Threads policy** as deterministic authority: Jev confidence is evidence, never permission by itself
-
-See [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md).
-
-## FAQ
-
-**Do I need the TypeScript control plane or the Python helper?**
-
-No. Install the Codex plugin. That is the product.
-
-**When would I self-host the TypeScript plane?**
-
-When you want Temporal, human gates, and a local UI on localhost. See [docs/SAAS.md](docs/SAAS.md).
-
-**When would I use the Python helper?**
-
-For deterministic routing, benches, provider-neutral experiments, or the existing CLI durable mode. Clone the repo; it is not on PyPI.
-
-**Do I need a roster?**
-
-No. Rosters are an advanced opt-in.
-
-**Is there a live hosted service?**
-
-No. This repository has no sign-up URL and no public deployment.
-
-## Runtime strategy
-
-The preferred runtime order is:
-
-1. **Native Codex subagents** for normal interactive Codex work
-2. **TypeScript Temporal control plane** for optional self-hosted, long-lived, or human-gated work on localhost
-3. **Python Temporal helper** until TypeScript parity, then deprecate
-4. **OpenAI Agents API / other providers** when that execution backend is explicitly requested
-
-Durable Threads does not duplicate native Codex spawn/wait/resume machinery unless a measurable capability gap requires it. Temporal is an optional durability substrate, not a prerequisite for the plugin.
+The hosted/self-host experimental runtime and native policy are distinct. Read [the audit's remaining hardening requirements](docs/PRO5_OPTIMIZATION.md) before treating either as production enforcement.
 
 ## Documentation
 
-- [Installation and plugin updates](docs/INSTALLATION.md)
-- [Native Codex multi-agent integration](docs/NATIVE_MULTI_AGENT.md)
-- [Self-host the TypeScript control plane](docs/SAAS.md)
-- [Temporal + Jev durable mode](docs/TEMPORAL_JEV.md)
-- [Customization: simple -> advanced](docs/CUSTOMIZATION.md)
-- [OpenAI compatibility / documentation audit](docs/OPENAI_COMPATIBILITY.md)
+- [Installation and updates](docs/INSTALLATION.md)
+- [Native multi-agent integration](docs/NATIVE_MULTI_AGENT.md)
+- [Customization](docs/CUSTOMIZATION.md)
+- [OpenAI compatibility](docs/OPENAI_COMPATIBILITY.md)
 - [Architecture](plugins/durable-threads/skills/durable-threads/references/ARCHITECTURE.md)
 - [Model economics](plugins/durable-threads/skills/durable-threads/references/MODEL_ECONOMICS.md)
-- [Risk-aware routing](plugins/durable-threads/skills/durable-threads/references/RISK_ROUTING.md)
-- [Implementation packet contract](plugins/durable-threads/skills/durable-threads/references/PACKET_CONTRACT.md)
-- [Operating policy](plugins/durable-threads/skills/durable-threads/references/OPERATING_POLICY.md)
+- [Astra guide](plugins/durable-threads/skills/durable-threads/references/ASTRA.md)
+- [Packet contract](plugins/durable-threads/skills/durable-threads/references/PACKET_CONTRACT.md)
 - [Provider adapters](plugins/durable-threads/skills/durable-threads/references/PROVIDERS.md)
 - [Benchmarking](plugins/durable-threads/skills/durable-threads/references/BENCHMARKING.md)
-- [Durable mode overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
-- [ADR 0001: Rust / WebAssembly decision (superseded)](docs/adr/0001-rust-wasm.md)
-- [ADR 0002: TypeScript control plane](docs/adr/0002-typescript-saas.md)
-- [Long-form article](docs/articles/frontier-decisions-cheap-execution.md)
-
-## Compatibility history
-
-- Pre-native-multi-agent v0.4: [archive/pre-native-multi-agent-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-native-multi-agent-2026-09-12)
-- Pre-simplification v0.3: [archive/pre-simplified-setup-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-simplified-setup-2026-09-12)
-- Pre-model-economics: [archive/pre-model-economics-2026-09-12](https://github.com/Strataward/durable-threads/tree/archive/pre-model-model-economics-2026-09-12)
+- [Durable overhead benchmark](docs/benchmarks/2026-09-19-durable-mode-overhead.md)
+- [ADR: TypeScript control plane](docs/adr/0002-typescript-saas.md)
 
 ## Development
 
 ```bash
 python3 -m pip install -e '.[dev]'
-pytest
+python3 -m pytest
 ruff check .
-python -m compileall -q src scripts
-python scripts/validate_repo.py
+python3 -m compileall -q src scripts
+python3 scripts/validate_repo.py
 npm install
 npm test
+npm run typecheck
+node --test tests/pro5_checks.mjs
 ```
 
-Durable mode: the Python checks above are unchanged. Run `tests/test_temporal_workflows.py` after installing `.[durable]`. The self-hosted TypeScript control plane is documented in [docs/SAAS.md](docs/SAAS.md).
-
-Durable Threads is alpha software. Codex plugin, subagent, model, and worktree surfaces can change quickly, so compatibility documentation is dated and should be rechecked against current upstream sources.
+Durable Threads is alpha software. Product capabilities and limits change; use dated official documentation and runtime probes, not stale model assumptions. This is an optimization policy and diagnostic toolset, not a rate-limit bypass or a guarantee of more hours.
 
 ## License
 
